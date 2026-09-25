@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark scroll-smooth">
-      <body className={`${inter.className} min-h-screen flex flex-col bg-[#0b0c10] text-zinc-100 antialiased`}>
+    <html lang="en" className="scroll-smooth">
+      <body className={`${inter.className} min-h-screen flex flex-col bg-[#f8fafc] text-slate-900 antialiased`}>
         <CartProvider>
           <div className="gradient-mesh" />
           <Navbar />
