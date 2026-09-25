@@ -1,13 +1,14 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, "feature/**" ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
   lint-test-build:
+    name: Lint, Test & Build Next.js
     runs-on: ubuntu-latest
 
     steps:
@@ -34,3 +35,22 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
         run: npm run build
+
+  docker-build:
+    name: Build & Validate Docker Image
+    needs: lint-test-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: shopflow:${{ github.sha }}, shopflow:latest
