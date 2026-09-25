@@ -1,13 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ShoppingCart, Search, User, Menu, X, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ShoppingCart, Search, User, Menu, X, ChevronDown, Sparkles, Shirt, Award, Flame, Dumbbell } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 
 export function Navbar() {
   const { totalCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [shopDropdownOpen, setShopDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown if clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShopDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <>
@@ -41,10 +54,91 @@ export function Navbar() {
 
             {/* Desktop Navigation Links */}
             <nav className="hidden lg:flex items-center gap-6 text-sm font-normal text-black whitespace-nowrap">
-              <div className="relative group flex items-center gap-1 cursor-pointer hover:text-neutral-600">
-                <span>Shop</span>
-                <ChevronDown className="w-4 h-4 text-neutral-500" />
+              
+              {/* Interactive Shop Dropdown */}
+              <div ref={dropdownRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShopDropdownOpen(!shopDropdownOpen)}
+                  onMouseEnter={() => setShopDropdownOpen(true)}
+                  className="flex items-center gap-1 cursor-pointer font-medium text-black hover:text-neutral-600 py-2 focus:outline-none"
+                  aria-expanded={shopDropdownOpen}
+                >
+                  <span>Shop</span>
+                  <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform duration-200 ${shopDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {/* Dropdown Menu Modal */}
+                {shopDropdownOpen && (
+                  <div
+                    onMouseLeave={() => setShopDropdownOpen(false)}
+                    className="absolute top-full left-0 mt-1 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-200/80 p-3 z-50 animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="space-y-1">
+                      <Link
+                        href="/products"
+                        onClick={() => setShopDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-neutral-100 text-sm font-semibold text-black transition-colors"
+                      >
+                        <Sparkles className="w-4 h-4 text-neutral-700" />
+                        <div>
+                          <div>All Products</div>
+                          <div className="text-[11px] text-neutral-400 font-normal">Explore full catalog</div>
+                        </div>
+                      </Link>
+
+                      <Link
+                        href="/products?category=casual"
+                        onClick={() => setShopDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-neutral-100 text-sm font-semibold text-black transition-colors"
+                      >
+                        <Shirt className="w-4 h-4 text-neutral-700" />
+                        <div>
+                          <div>Casual Wear</div>
+                          <div className="text-[11px] text-neutral-400 font-normal">Tees, denim & everyday</div>
+                        </div>
+                      </Link>
+
+                      <Link
+                        href="/products?category=formal"
+                        onClick={() => setShopDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-neutral-100 text-sm font-semibold text-black transition-colors"
+                      >
+                        <Award className="w-4 h-4 text-neutral-700" />
+                        <div>
+                          <div>Formal Attire</div>
+                          <div className="text-[11px] text-neutral-400 font-normal">Tailored shirts & blazers</div>
+                        </div>
+                      </Link>
+
+                      <Link
+                        href="/products?category=party"
+                        onClick={() => setShopDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-neutral-100 text-sm font-semibold text-black transition-colors"
+                      >
+                        <Flame className="w-4 h-4 text-neutral-700" />
+                        <div>
+                          <div>Party & Night</div>
+                          <div className="text-[11px] text-neutral-400 font-normal">Bold statements & jackets</div>
+                        </div>
+                      </Link>
+
+                      <Link
+                        href="/products?category=gym"
+                        onClick={() => setShopDropdownOpen(false)}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-neutral-100 text-sm font-semibold text-black transition-colors"
+                      >
+                        <Dumbbell className="w-4 h-4 text-neutral-700" />
+                        <div>
+                          <div>Gym & Active</div>
+                          <div className="text-[11px] text-neutral-400 font-normal">Athletic fits & runners</div>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </div>
+
               <Link href="/products?category=casual" className="hover:text-neutral-600 transition-colors">
                 On Sale
               </Link>
@@ -70,9 +164,9 @@ export function Navbar() {
 
             {/* Action Icons */}
             <div className="flex items-center gap-4 text-black">
-              <button className="sm:hidden p-1 text-black" aria-label="Search">
+              <Link href="/products" className="sm:hidden p-1 text-black" aria-label="Search">
                 <Search className="w-5 h-5" />
-              </button>
+              </Link>
 
               <Link href="/cart" className="relative p-1 hover:opacity-75 transition-opacity" aria-label="Shopping Cart">
                 <ShoppingCart className="w-5 h-5" />
@@ -95,11 +189,15 @@ export function Navbar() {
         {mobileMenuOpen && (
           <div className="lg:hidden border-b border-neutral-200 bg-white px-6 py-6 space-y-4">
             <nav className="flex flex-col space-y-4 text-base font-medium text-black">
-              <Link href="/products" onClick={() => setMobileMenuOpen(false)}>Shop All</Link>
-              <Link href="/products?category=casual" onClick={() => setMobileMenuOpen(false)}>On Sale</Link>
-              <Link href="/products" onClick={() => setMobileMenuOpen(false)}>New Arrivals</Link>
-              <Link href="/products?category=formal" onClick={() => setMobileMenuOpen(false)}>Brands</Link>
-              <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-neutral-500 pt-2 border-t">Admin Dashboard</Link>
+              <div className="font-bold text-xs uppercase tracking-wider text-neutral-400">Collections</div>
+              <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="pl-2">All Products</Link>
+              <Link href="/products?category=casual" onClick={() => setMobileMenuOpen(false)} className="pl-2">Casual</Link>
+              <Link href="/products?category=formal" onClick={() => setMobileMenuOpen(false)} className="pl-2">Formal</Link>
+              <Link href="/products?category=party" onClick={() => setMobileMenuOpen(false)} className="pl-2">Party</Link>
+              <Link href="/products?category=gym" onClick={() => setMobileMenuOpen(false)} className="pl-2">Gym</Link>
+              <div className="border-t border-neutral-100 pt-3">
+                <Link href="/cart" onClick={() => setMobileMenuOpen(false)}>My Cart ({totalCount})</Link>
+              </div>
             </nav>
           </div>
         )}
