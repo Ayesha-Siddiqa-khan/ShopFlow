@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   lint-test-build:
     name: Lint, Test & Build Next.js
@@ -36,8 +40,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
         run: npm run build
 
-  docker-build:
-    name: Build & Validate Docker Image
+  docker-build-push:
+    name: Build & Push Docker Image to ECR
     needs: lint-test-build
     runs-on: ubuntu-latest
 
@@ -45,12 +49,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::257536659737:role/ShopFlow-dev-github-actions-oidc
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: false
-          tags: shopflow:${{ github.sha }}, shopflow:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/shopflow:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/shopflow:latest
+
+      - name: Deploy to Kubernetes Cluster
+        if: github.ref == 'refs/heads/main'
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+        continue-on-error: true
+
+      - name: Apply Kubernetes Manifests
+        if: github.ref == 'refs/heads/main'
+        run: |
+          kubectl apply -f k8s/shopflow-app.yaml || true
+          kubectl rollout restart deployment/shopflow-web || true
+        continue-on-error: true
