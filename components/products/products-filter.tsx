@@ -20,7 +20,7 @@ export function ProductsFilter({
 }: ProductsFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [searchInput, setSearchInput] = useState(currentSearch);
 
   const applyFilters = (updates: Record<string, string | null>) => {
@@ -43,17 +43,44 @@ export function ProductsFilter({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between glass-panel p-4 rounded-2xl">
-        {/* Search Input */}
-        <form onSubmit={handleSearchSubmit} className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+    <div className="space-y-6">
+      {/* Category Pills bar matching SHOP.CO */}
+      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          onClick={() => applyFilters({ category: null })}
+          className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
+            !currentCategory
+              ? "bg-black text-white shadow-sm"
+              : "bg-[#F0F0F0] text-black hover:bg-neutral-200"
+          }`}
+        >
+          All Items
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => applyFilters({ category: cat.slug })}
+            className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
+              currentCategory === cat.slug
+                ? "bg-black text-white shadow-sm"
+                : "bg-[#F0F0F0] text-black hover:bg-neutral-200"
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Search Input & Sort Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between pb-2">
+        <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-lg">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search products by keyword..."
-            className="w-full pl-10 pr-10 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full pl-11 pr-10 py-3 bg-[#F0F0F0] rounded-full text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-black transition-all"
           />
           {searchInput && (
             <button
@@ -62,7 +89,7 @@ export function ProductsFilter({
                 setSearchInput("");
                 applyFilters({ search: null });
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black"
             >
               <X className="w-4 h-4" />
             </button>
@@ -70,58 +97,21 @@ export function ProductsFilter({
         </form>
 
         {/* Sort Dropdown */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sort:</span>
-          </div>
+        <div className="flex items-center gap-2 self-end sm:self-auto text-sm text-neutral-600">
+          <SlidersHorizontal className="w-4 h-4 text-black" />
+          <span>Sort by:</span>
           <select
             value={currentSort}
             onChange={(e) => applyFilters({ sort: e.target.value })}
-            className="bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs sm:text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500"
+            className="bg-transparent font-bold text-black text-sm outline-none cursor-pointer"
           >
-            <option value="featured">Featured / Newest</option>
+            <option value="featured">Most Popular</option>
             <option value="price-low">Price: Low to High</option>
             <option value="price-high">Price: High to Low</option>
             <option value="name">Alphabetical</option>
           </select>
         </div>
       </div>
-
-      {/* Category Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        <button
-          onClick={() => applyFilters({ category: null })}
-          className={`px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-            !currentCategory
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
-              : "bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
-          }`}
-        >
-          All Items
-        </button>
-
-        {categories.map((cat) => {
-          const isSelected = currentCategory === cat.slug;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => applyFilters({ category: isSelected ? null : cat.slug })}
-              className={`px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                isSelected
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
-                  : "bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
-              }`}
-            >
-              {cat.name}
-            </button>
-          );
-        })}
-      </div>
-
-      {isPending && (
-        <div className="text-xs text-indigo-400 animate-pulse">Updating catalog...</div>
-      )}
     </div>
   );
 }
