@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shopflow-web
+  namespace: default
+  labels:
+    app: shopflow-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shopflow-web
+  template:
+    metadata:
+      labels:
+        app: shopflow-web
+    spec:
+      containers:
+        - name: shopflow-web
+          image: 257536659737.dkr.ecr.us-east-1.amazonaws.com/shopflow:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopflow-web-service
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: shopflow-web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shopflow-ingress
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shopflow-web-service
+                port:
+                  number: 3000
