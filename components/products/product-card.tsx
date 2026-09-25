@@ -72,19 +72,19 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Content */}
       <div className="flex flex-col flex-1 p-5">
-        <Link href={`/products/${product.slug}`} className="group-hover:text-indigo-400 transition-colors">
-          <h3 className="font-semibold text-zinc-100 text-base line-clamp-1">
+        <Link href={`/products/${product.slug}`} className="group-hover:text-cyan-400 transition-colors">
+          <h3 className="font-bold text-zinc-100 text-base line-clamp-1">
             {product.name}
           </h3>
         </Link>
-        <p className="mt-1 text-xs text-zinc-400 line-clamp-2 leading-relaxed flex-1">
+        <p className="mt-1 text-xs text-slate-400 line-clamp-2 leading-relaxed flex-1">
           {product.description}
         </p>
 
-        <div className="mt-4 pt-3 border-t border-zinc-800/60 flex items-center justify-between">
+        <div className="mt-4 pt-3 border-t border-purple-900/30 flex items-center justify-between">
           <div>
-            <span className="text-xs text-zinc-500 block">Price</span>
-            <span className="text-lg font-bold text-white tracking-tight">
+            <span className="text-[11px] font-mono text-cyan-400/80 block uppercase tracking-wider">Price</span>
+            <span className="text-lg font-extrabold text-white tracking-tight">
               {formatPrice(product.price)}
             </span>
           </div>
@@ -92,7 +92,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="flex items-center gap-1.5">
             <Link
               href={`/products/${product.slug}`}
-              className="p-2 text-zinc-400 hover:text-white bg-zinc-800/50 hover:bg-zinc-800 rounded-xl transition-all"
+              className="p-2 text-zinc-400 hover:text-cyan-300 bg-slate-900 border border-purple-500/20 hover:border-cyan-400/50 rounded-xl transition-all"
               title="View Details"
               aria-label="View Details"
             >
@@ -102,12 +102,12 @@ export function ProductCard({ product }: ProductCardProps) {
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold tracking-wide transition-all shadow-md ${
                 isOutOfStock
                   ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-800"
                   : isAdded
-                  ? "bg-emerald-600 text-white"
-                  : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20 hover:scale-[1.02]"
+                  ? "bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]"
+                  : "gradient-accent text-white shadow-[0_0_15px_rgba(217,70,239,0.35)] hover:scale-[1.03]"
               }`}
             >
               {isAdded ? (

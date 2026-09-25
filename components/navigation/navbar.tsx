@@ -15,14 +15,14 @@ export function Navbar() {
         <div className="flex items-center justify-between h-18">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform duration-300">
+            <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-[0_0_20px_rgba(217,70,239,0.4)] group-hover:scale-105 transition-all duration-300">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-bold tracking-tight text-white flex items-center gap-1">
-                Shop<span className="text-indigo-400">Flow</span>
+                Shop<span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-400">Flow</span>
               </span>
-              <span className="text-[10px] text-zinc-400 font-medium tracking-widest uppercase">
+              <span className="text-[10px] text-cyan-400/80 font-mono tracking-widest uppercase font-semibold">
                 DevOps Edition
               </span>
             </div>
@@ -82,20 +82,20 @@ export function Navbar() {
 
             <Link
               href="/admin"
-              className="hidden lg:flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg transition-all"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:text-white bg-cyan-950/30 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] rounded-lg transition-all"
             >
-              <Shield className="w-3.5 h-3.5 text-indigo-400" />
+              <Shield className="w-3.5 h-3.5 text-cyan-400" />
               <span>Admin</span>
             </Link>
 
             <Link
               href="/cart"
-              className="relative p-2.5 bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 rounded-xl text-zinc-200 hover:text-white transition-all shadow-sm group"
+              className="relative p-2.5 bg-slate-900 border border-purple-500/30 hover:border-fuchsia-500 rounded-xl text-zinc-200 hover:text-white transition-all shadow-sm group hover:shadow-[0_0_15px_rgba(217,70,239,0.3)]"
               aria-label="Shopping Cart"
             >
-              <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <ShoppingBag className="w-5 h-5 group-hover:scale-110 text-cyan-400 group-hover:text-fuchsia-400 transition-all" />
               {totalCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-[11px] font-bold text-white shadow-md animate-in zoom-in">
+                <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-rose-600 text-[11px] font-bold text-white shadow-[0_0_10px_rgba(244,63,94,0.6)] animate-in zoom-in">
                   {totalCount}
                 </span>
               )}

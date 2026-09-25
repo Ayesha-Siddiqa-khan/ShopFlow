@@ -9,11 +9,11 @@ export function Footer() {
           {/* Brand info */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center shadow-[0_0_12px_rgba(217,70,239,0.4)]">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="text-lg font-bold text-white tracking-tight">
-                Shop<span className="text-indigo-400">Flow</span>
+                Shop<span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-400">Flow</span>
               </span>
             </Link>
             <p className="text-sm text-zinc-400 leading-relaxed">

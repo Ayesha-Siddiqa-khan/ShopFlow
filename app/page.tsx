@@ -16,24 +16,24 @@ export default async function HomePage() {
       {/* Hero Section */}
       <section className="relative pt-12 md:pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="relative z-10 text-center max-w-3xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-950/60 text-indigo-300 border border-indigo-800/60 backdrop-blur-md">
-            <Zap className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-cyan-950/40 text-cyan-300 border border-cyan-500/40 backdrop-blur-md shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+            <Zap className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
             <span>Next.js 16 + Supabase + Docker Powered</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
             Crafted for speed. <br />
-            <span className="gradient-text">Engineered for scale.</span>
+            <span className="gradient-text drop-shadow-[0_0_25px_rgba(217,70,239,0.35)]">Engineered for scale.</span>
           </h1>
 
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
             Explore curated modern electronics, minimalist apparel, and artisan homeware. Complete with instant checkout, live order tracking, and production DevOps instrumentation.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
               href="/products"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-white gradient-accent shadow-lg shadow-indigo-600/30 hover:scale-[1.02] transition-transform"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-white gradient-accent shadow-[0_0_25px_rgba(139,92,246,0.4)] hover:scale-[1.03] transition-all"
             >
               <span>Explore Catalog</span>
               <ArrowRight className="w-4 h-4" />
@@ -41,9 +41,9 @@ export default async function HomePage() {
 
             <Link
               href="/admin"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-zinc-300 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:text-white transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-zinc-200 bg-slate-900/90 border border-purple-500/30 hover:border-cyan-400 hover:text-cyan-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] transition-all"
             >
-              <ShieldCheck className="w-4 h-4 text-indigo-400" />
+              <ShieldCheck className="w-4 h-4 text-cyan-400" />
               <span>Admin Dashboard</span>
             </Link>
           </div>
@@ -51,42 +51,42 @@ export default async function HomePage() {
 
         {/* Feature Highlights Grid */}
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-6 rounded-2xl glass-panel space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-800/50 flex items-center justify-center text-indigo-400">
+          <div className="p-6 rounded-2xl glass-panel glow-card space-y-3 border-t-2 border-t-cyan-500/50">
+            <div className="w-11 h-11 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
               <Truck className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-white text-sm">Swift Express Dispatch</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <h3 className="font-bold text-white text-sm tracking-wide">Swift Express Dispatch</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
               Complimentary expedited tracking on all qualifying orders over $150.
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl glass-panel space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-purple-950/80 border border-purple-800/50 flex items-center justify-center text-purple-400">
+          <div className="p-6 rounded-2xl glass-panel glow-card space-y-3 border-t-2 border-t-fuchsia-500/50">
+            <div className="w-11 h-11 rounded-xl bg-fuchsia-950/80 border border-fuchsia-500/40 flex items-center justify-center text-fuchsia-400 shadow-[0_0_12px_rgba(217,70,239,0.3)]">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-white text-sm">Supabase Row-Level Security</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <h3 className="font-bold text-white text-sm tracking-wide">Supabase Row-Level Security</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
               Granular cryptographic database policies isolate user carts and orders.
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl glass-panel space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-950/80 border border-blue-800/50 flex items-center justify-center text-blue-400">
+          <div className="p-6 rounded-2xl glass-panel glow-card space-y-3 border-t-2 border-t-purple-500/50">
+            <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.3)]">
               <Box className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-white text-sm">Containerized Deployment</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <h3 className="font-bold text-white text-sm tracking-wide">Containerized Deployment</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
               Multi-stage Alpine Docker container ready for AWS and Kubernetes.
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl glass-panel space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-800/50 flex items-center justify-center text-emerald-400">
+          <div className="p-6 rounded-2xl glass-panel glow-card space-y-3 border-t-2 border-t-emerald-500/50">
+            <div className="w-11 h-11 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]">
               <RefreshCw className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-white text-sm">Automated CI/CD Quality</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <h3 className="font-bold text-white text-sm tracking-wide">Automated CI/CD Quality</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
               GitHub Actions build, lint, and test validation on every git push.
             </p>
           </div>
