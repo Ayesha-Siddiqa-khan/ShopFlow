@@ -52,11 +52,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Inspect GitHub OIDC Token Claims
-        run: |
-          TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
-          echo "JWT Claims:"
-          echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq . || true
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
