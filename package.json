@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test": "node --test"
+    "lint": "eslint .",
+    "test": "node --test tests/app.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
