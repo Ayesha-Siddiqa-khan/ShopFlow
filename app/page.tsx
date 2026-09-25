@@ -1,265 +1,286 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ShieldCheck, RefreshCw, Box, Truck, Star, ArrowUpRight } from "lucide-react";
+import { ArrowRight, Star, Sparkle } from "lucide-react";
 import { getProducts, getCategories } from "@/lib/db";
 import { ProductCard } from "@/components/products/product-card";
 
 export default async function HomePage() {
-  const [categories, products] = await Promise.all([
+  const [, products] = await Promise.all([
     getCategories(),
     getProducts(),
   ]);
 
-  const featuredProducts = products.slice(0, 6);
-  const heroProduct = products[0] || null;
+  const newArrivals = products.slice(0, 4);
+  const topSelling = products.slice(4, 8);
 
   return (
-    <div className="space-y-24 pb-24">
-      {/* Modern High-Impact Split Hero */}
-      <section className="relative pt-8 md:pt-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          {/* Left Column: Headline and CTAs */}
-          <div className="lg:col-span-7 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-sm">
-              <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
-              <span>Spring 2026 Collection Live</span>
-            </div>
+    <div className="space-y-16 pb-20">
+      
+      {/* Hero Section exactly like SHOP.CO */}
+      <section className="shop-hero-bg relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 pb-12 sm:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-6 sm:space-y-8">
+              <h1 className="font-integral text-4xl sm:text-6xl lg:text-7xl text-black leading-[1.05]">
+                FIND CLOTHES THAT MATCHES YOUR STYLE
+              </h1>
 
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 leading-[1.08]">
-              Design that inspires. <br />
-              <span className="gradient-text">Engineered to last.</span>
-            </h1>
+              <p className="text-sm sm:text-base text-neutral-600 max-w-lg leading-relaxed">
+                Browse through our diverse range of meticulously crafted garments, designed to bring out your individuality and cater to your sense of style.
+              </p>
 
-            <p className="text-lg text-slate-600 max-w-xl leading-relaxed">
-              Discover expertly curated lifestyle electronics, minimalist streetwear, and bespoke artisan homeware crafted for modern living.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Link
-                href="/products"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-white gradient-accent shadow-xl shadow-indigo-500/25 hover:scale-[1.02] transition-all"
-              >
-                <span>Shop New Arrivals</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-
-              <Link
-                href="/products?category=electronics"
-                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl font-semibold text-slate-700 bg-white border border-slate-200/80 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm"
-              >
-                <span>Browse Tech</span>
-              </Link>
-            </div>
-
-            {/* Social proof trust bar */}
-            <div className="pt-8 border-t border-slate-200/70 flex items-center gap-6 text-xs text-slate-500">
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center font-bold text-[10px] text-slate-700">AK</div>
-                <div className="w-8 h-8 rounded-full bg-indigo-200 border-2 border-white flex items-center justify-center font-bold text-[10px] text-indigo-700">SR</div>
-                <div className="w-8 h-8 rounded-full bg-emerald-200 border-2 border-white flex items-center justify-center font-bold text-[10px] text-emerald-700">ML</div>
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1 text-amber-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                  ))}
-                  <span className="font-bold text-slate-800 ml-1">4.9/5</span>
-                </div>
-                <span>Over 12,000+ satisfied worldwide clients</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Hero Visual Product Card */}
-          <div className="lg:col-span-5 relative">
-            <div className="relative rounded-3xl overflow-hidden glass-panel p-4 shadow-2xl border border-slate-200/80">
-              {heroProduct && (
-                <div className="relative aspect-4/3 w-full rounded-2xl overflow-hidden bg-slate-100">
-                  <Image
-                    src={heroProduct.image_url || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800"}
-                    alt={heroProduct.name}
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 100vw, 500px"
-                    className="object-cover object-center hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 text-xs font-bold bg-white/95 text-slate-900 rounded-full shadow-md backdrop-blur-md">
-                      Featured Pick
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="p-4 pt-5 flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-lg">
-                    {heroProduct ? heroProduct.name : "Aura Flow Wireless"}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Studio sound acoustic tuning & active noise cancellation
-                  </p>
-                </div>
+              <div>
                 <Link
-                  href={`/products/${heroProduct?.slug || ""}`}
-                  className="p-3 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl shadow-md transition-colors"
+                  href="/products"
+                  className="shop-pill-btn inline-block px-14 py-4 text-sm font-semibold tracking-wide"
                 >
-                  <ArrowUpRight className="w-4 h-4" />
+                  Shop Now
                 </Link>
               </div>
-            </div>
-          </div>
 
-        </div>
-
-        {/* Feature Highlights Grid */}
-        <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-6 rounded-2xl glass-panel glow-card space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-              <Truck className="w-5 h-5" />
+              {/* Stats Bar */}
+              <div className="grid grid-cols-3 gap-6 pt-6 sm:pt-10 max-w-md divide-x divide-neutral-300">
+                <div>
+                  <h3 className="text-2xl sm:text-4xl font-extrabold text-black">200+</h3>
+                  <p className="text-xs text-neutral-500 mt-1">International Brands</p>
+                </div>
+                <div className="pl-6">
+                  <h3 className="text-2xl sm:text-4xl font-extrabold text-black">2,000+</h3>
+                  <p className="text-xs text-neutral-500 mt-1">High-Quality Products</p>
+                </div>
+                <div className="pl-6">
+                  <h3 className="text-2xl sm:text-4xl font-extrabold text-black">30,000+</h3>
+                  <p className="text-xs text-neutral-500 mt-1">Happy Customers</p>
+                </div>
+              </div>
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">Swift Express Dispatch</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Complimentary expedited tracking on all qualifying orders over $150.
-            </p>
-          </div>
 
-          <div className="p-6 rounded-2xl glass-panel glow-card space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-slate-900 text-sm">Secure Row-Level Auth</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Granular cryptographic database policies isolate user carts and orders.
-            </p>
-          </div>
+            {/* Right Hero Image with Star Accents */}
+            <div className="lg:col-span-5 relative mt-6 lg:mt-0 flex justify-center">
+              <div className="relative w-full max-w-lg aspect-4/5 rounded-3xl overflow-hidden shadow-2xl">
+                <Image
+                  src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1000&auto=format&fit=crop&q=80"
+                  alt="Fashion Model Couple"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 600px"
+                  className="object-cover object-top"
+                />
+              </div>
 
-          <div className="p-6 rounded-2xl glass-panel glow-card space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-              <Box className="w-5 h-5" />
+              {/* Decorative Stars from SHOP.CO template */}
+              <Sparkle className="absolute -top-4 right-4 w-14 h-14 text-black fill-black animate-pulse" />
+              <Sparkle className="absolute top-1/2 left-0 w-8 h-8 text-black fill-black" />
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">Zero-Friction Returns</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Enjoy a 30-day money-back guarantee with prepaid return labels included.
-            </p>
-          </div>
 
-          <div className="p-6 rounded-2xl glass-panel glow-card space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-              <RefreshCw className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-slate-900 text-sm">Automated CI/CD Quality</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              High-availability Kubernetes deployment on AWS EC2 with continuous integration.
-            </p>
           </div>
         </div>
       </section>
 
-      {/* Categories Showcase */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Curated Collections
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Select a category to browse precision-selected pieces.
-            </p>
+      {/* Brand Logos Bar (VERSACE, ZARA, GUCCI, PRADA, CALVIN KLEIN) */}
+      <section className="brand-bar py-9">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-8 text-white font-integral text-xl sm:text-3xl tracking-widest opacity-90">
+            <span>VERSACE</span>
+            <span>ZARA</span>
+            <span>GUCCI</span>
+            <span>PRADA</span>
+            <span>Calvin Klein</span>
           </div>
-          <Link
-            href="/products"
-            className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 group"
-          >
-            <span>All Categories</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/products?category=${cat.slug}`}
-              className="group p-6 rounded-2xl glass-panel glow-card flex flex-col justify-between h-48 border border-slate-200/80"
-            >
-              <div>
-                <span className="text-[11px] font-bold text-indigo-600 tracking-wider uppercase">
-                  Collection
-                </span>
-                <h3 className="text-lg font-bold text-slate-900 mt-1 group-hover:text-indigo-600 transition-colors">
-                  {cat.name}
-                </h3>
-                <p className="text-xs text-slate-500 mt-2 line-clamp-2">
-                  {cat.description}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1 text-xs font-bold text-slate-700 group-hover:text-indigo-600 pt-4 border-t border-slate-100">
-                <span>View Products</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-          ))}
         </div>
       </section>
 
-      {/* Featured Products Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-          <div>
-            <div className="inline-block text-xs font-bold uppercase tracking-widest text-indigo-600 mb-1">
-              Trending Catalog
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Featured Highlights
-            </h2>
-          </div>
-          <Link
-            href="/products"
-            className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 group"
-          >
-            <span>View Full Catalog ({products.length})</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
+      {/* NEW ARRIVALS Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div className="text-center mb-12">
+          <h2 className="font-integral text-3xl sm:text-5xl text-black">
+            NEW ARRIVALS
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featuredProducts.map((product) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          {newArrivals.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
+
+        <div className="text-center mt-10">
+          <Link
+            href="/products"
+            className="inline-block px-14 py-3.5 border border-neutral-200 rounded-full text-sm font-semibold text-black hover:bg-neutral-100 transition-colors"
+          >
+            View All
+          </Link>
+        </div>
       </section>
 
-      {/* Call to Action Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <hr className="border-neutral-200" />
+      </div>
+
+      {/* TOP SELLING Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-8 sm:p-14 text-center text-white shadow-2xl">
-          <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Experience the Future of E-Commerce
+        <div className="text-center mb-12">
+          <h2 className="font-integral text-3xl sm:text-5xl text-black">
+            TOP SELLING
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+          {topSelling.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+
+        <div className="text-center mt-10">
+          <Link
+            href="/products"
+            className="inline-block px-14 py-3.5 border border-neutral-200 rounded-full text-sm font-semibold text-black hover:bg-neutral-100 transition-colors"
+          >
+            View All
+          </Link>
+        </div>
+      </section>
+
+      {/* BROWSE BY DRESS STYLE (Big Modern Blocks from SHOP.CO) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="shop-hero-bg rounded-[2.5rem] p-6 sm:p-14">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="font-integral text-3xl sm:text-5xl text-black">
+              BROWSE BY DRESS STYLE
             </h2>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Engineered with modern Next.js 16 App Router, Supabase PostgreSQL with cryptographic RLS policies, and containerized Docker CI/CD on AWS.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-              <Link
-                href="/products"
-                className="px-8 py-3.5 rounded-xl font-bold text-slate-900 bg-white hover:bg-slate-100 transition-all text-sm shadow-lg hover:scale-[1.02]"
-              >
-                Shop Full Collection
-              </Link>
-              <Link
-                href="/api/health"
-                target="_blank"
-                className="px-6 py-3.5 rounded-xl font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md transition-all text-sm"
-              >
-                Inspect Health Metrics
-              </Link>
-            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            {/* Casual */}
+            <Link
+              href="/products?category=casual"
+              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group"
+            >
+              <h3 className="text-2xl font-bold text-black z-10 relative">Casual</h3>
+              <Image
+                src="https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=800&auto=format&fit=crop&q=80"
+                alt="Casual Style"
+                fill
+                sizes="(max-width: 768px) 100vw, 400px"
+                className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+              />
+            </Link>
+
+            {/* Formal */}
+            <Link
+              href="/products?category=formal"
+              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group"
+            >
+              <h3 className="text-2xl font-bold text-black z-10 relative">Formal</h3>
+              <Image
+                src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1000&auto=format&fit=crop&q=80"
+                alt="Formal Style"
+                fill
+                sizes="(max-width: 768px) 100vw, 800px"
+                className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+              />
+            </Link>
+
+            {/* Party */}
+            <Link
+              href="/products?category=party"
+              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group"
+            >
+              <h3 className="text-2xl font-bold text-black z-10 relative">Party</h3>
+              <Image
+                src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=1000&auto=format&fit=crop&q=80"
+                alt="Party Style"
+                fill
+                sizes="(max-width: 768px) 100vw, 800px"
+                className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+              />
+            </Link>
+
+            {/* Gym */}
+            <Link
+              href="/products?category=gym"
+              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group"
+            >
+              <h3 className="text-2xl font-bold text-black z-10 relative">Gym</h3>
+              <Image
+                src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80"
+                alt="Gym Style"
+                fill
+                sizes="(max-width: 768px) 100vw, 400px"
+                className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+              />
+            </Link>
           </div>
         </div>
       </section>
+
+      {/* OUR HAPPY CUSTOMERS Testimonial Carousel Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="font-integral text-2xl sm:text-4xl text-black">
+            OUR HAPPY CUSTOMERS
+          </h2>
+          <div className="flex gap-2">
+            <button className="p-2 border border-neutral-200 rounded-full hover:bg-neutral-100" aria-label="Previous">
+              <ArrowRight className="w-4 h-4 rotate-180" />
+            </button>
+            <button className="p-2 border border-neutral-200 rounded-full hover:bg-neutral-100" aria-label="Next">
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-3">
+            <div className="flex text-amber-400 gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-current" />
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5 font-bold text-black text-base">
+              <span>Sarah M.</span>
+              <span className="w-4 h-4 bg-emerald-500 rounded-full text-white flex items-center justify-center text-[10px]">✓</span>
+            </div>
+            <p className="text-sm text-neutral-600 leading-relaxed">
+              &quot;I am blown away by the quality and style of the clothes I received from SHOP.CO. From casual wear to elegant dresses, every piece I&apos;ve bought has exceeded my expectations.&quot;
+            </p>
+          </div>
+
+          <div className="border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-3">
+            <div className="flex text-amber-400 gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-current" />
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5 font-bold text-black text-base">
+              <span>Alex K.</span>
+              <span className="w-4 h-4 bg-emerald-500 rounded-full text-white flex items-center justify-center text-[10px]">✓</span>
+            </div>
+            <p className="text-sm text-neutral-600 leading-relaxed">
+              &quot;Finding clothes that align with my personal style used to be a challenge until I discovered SHOP.CO. The range of options they offer is truly remarkable.&quot;
+            </p>
+          </div>
+
+          <div className="border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-3">
+            <div className="flex text-amber-400 gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-current" />
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5 font-bold text-black text-base">
+              <span>James L.</span>
+              <span className="w-4 h-4 bg-emerald-500 rounded-full text-white flex items-center justify-center text-[10px]">✓</span>
+            </div>
+            <p className="text-sm text-neutral-600 leading-relaxed">
+              &quot;As someone who&apos;s always on the lookout for unique fashion pieces, I&apos;m thrilled to have stumbled upon SHOP.CO. The selection of clothes is not only diverse but also on-point with trends.&quot;
+            </p>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }

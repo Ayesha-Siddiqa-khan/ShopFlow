@@ -8,8 +8,8 @@ import { CartProvider } from "@/lib/cart-context";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ShopFlow | Premium E-Commerce Experience",
-  description: "A production-grade, beautifully designed full-stack e-commerce application powered by Next.js, Supabase PostgreSQL, and modern DevOps architecture.",
+  title: "SHOP.CO | Find Clothes That Match Your Style",
+  description: "Browse through our diverse range of meticulously crafted garments, designed to bring out your individuality and cater to your sense of style.",
 };
 
 export default function RootLayout({
@@ -19,11 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.className} min-h-screen flex flex-col bg-[#f8fafc] text-slate-900 antialiased`}>
+      <body className={`${inter.className} min-h-screen flex flex-col bg-white text-black antialiased selection:bg-black selection:text-white`}>
         <CartProvider>
-          <div className="gradient-mesh" />
           <Navbar />
-          <main className="flex-1 relative z-10">{children}</main>
+          <main className="flex-1">{children}</main>
           <Footer />
         </CartProvider>
       </body>
