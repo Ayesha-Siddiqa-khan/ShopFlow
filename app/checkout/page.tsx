@@ -10,62 +10,80 @@ import {
   ShoppingBag,
   Lock,
   Sparkles,
-  Fingerprint,
   RefreshCw,
   X,
-  Check,
+  Zap,
 } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
 
-type PaymentMethodType = "visa" | "mastercard" | "paypal" | "applepay" | "googlepay";
+// Pakistani Payment Gateway Types
+type PakistaniPaymentType = "sadapay" | "nayapay" | "paypak" | "jazzcash" | "easypaisa";
+
+function createOrderId(): string {
+  return "PK-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(1000 + Math.random() * 9000);
+}
+
+function createRefId(prefix: string): string {
+  return prefix + "-" + Math.floor(100000 + Math.random() * 900000);
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, tax, shipping, total, clearCart } = useCart();
 
   const [formData, setFormData] = useState({
-    fullName: "Valued Customer",
-    email: "customer@example.com",
-    address: "742 Evergreen Terrace",
-    city: "San Francisco",
-    state: "CA",
-    postalCode: "94107",
+    fullName: "Pro Editor",
+    email: "proeditorpakistanifeeling@gmail.com",
+    phone: "0300 1234567",
+    address: "House 42, Street 7, F-8/2",
+    city: "Islamabad",
+    province: "ICT",
+    postalCode: "44000",
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("visa");
+  const [paymentMethod, setPaymentMethod] = useState<PakistaniPaymentType>("sadapay");
 
-  // Visa card state
-  const [visaDetails, setVisaDetails] = useState({
-    number: "4532 8920 1204 8892",
-    expiry: "12/28",
-    cvc: "345",
-    name: "Valued Customer",
+  // SadaPay Card State
+  const [sadaDetails, setSadaDetails] = useState({
+    number: "4111 8920 7481 9924",
+    expiry: "11/29",
+    cvc: "831",
+    name: "PRO EDITOR",
   });
 
-  // Mastercard state
-  const [mcDetails, setMcDetails] = useState({
-    number: "5412 7534 8901 6621",
-    expiry: "08/29",
-    cvc: "789",
-    name: "Valued Customer",
+  // NayaPay Card State
+  const [nayaDetails, setNayaDetails] = useState({
+    number: "4214 6702 3319 8812",
+    expiry: "07/30",
+    cvc: "492",
+    name: "PRO EDITOR",
   });
+
+  // PayPak (1LINK) Card State
+  const [paypakDetails, setPaypakDetails] = useState({
+    number: "6038 9201 4458 7720",
+    expiry: "05/28",
+    cvc: "619",
+    name: "PRO EDITOR",
+    bank: "Meezan Bank",
+  });
+
+  // JazzCash Wallet State
+  const [jazzMobile, setJazzMobile] = useState("0300 1234567");
+  const [jazzCnic, setJazzCnic] = useState("37405-1234567-1");
+  const [showJazzModal, setShowJazzModal] = useState(false);
+  const [jazzMpin, setJazzMpin] = useState("");
+  const [jazzProcessing, setJazzProcessing] = useState(false);
+
+  // EasyPaisa Wallet State
+  const [easyMobile, setEasyMobile] = useState("0345 7654321");
+  const [showEasyModal, setShowEasyModal] = useState(false);
+  const [easyPin, setEasyPin] = useState("");
+  const [easyProcessing, setEasyProcessing] = useState(false);
 
   // Active CVV highlight state for virtual card
   const [isCvvFocused, setIsCvvFocused] = useState(false);
-
-  // Interactive Modals State
-  const [showPayPalModal, setShowPayPalModal] = useState(false);
-  const [payPalProcessing, setPayPalProcessing] = useState(false);
-  const [payPalFundingSource, setPayPalFundingSource] = useState<"balance" | "bank">("balance");
-
-  const [showApplePaySheet, setShowApplePaySheet] = useState(false);
-  const [applePayBiometricActive, setApplePayBiometricActive] = useState(false);
-  const [applePayDone, setApplePayDone] = useState(false);
-
-  const [showGooglePaySheet, setShowGooglePaySheet] = useState(false);
-  const [googlePayProcessing, setGooglePayProcessing] = useState(false);
-  const [googlePayDone, setGooglePayDone] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -74,6 +92,11 @@ export default function CheckoutPage() {
 
   const discount = subtotal > 100 ? subtotal * 0.2 : 0;
   const finalTotal = total - discount;
+
+  // Conversion rate: 1 USD ≈ 278.5 PKR
+  const pkrRate = 278.5;
+  const pkrTotal = Math.round(finalTotal * pkrRate);
+  const formatPKR = (amt: number) => "₨ " + amt.toLocaleString("en-PK");
 
   // Prefill customer profile from session
   useEffect(() => {
@@ -88,14 +111,10 @@ export default function CheckoutPage() {
               email: parsed.email,
               fullName: parsed.name || prev.fullName,
             }));
-            setVisaDetails((prev) => ({
-              ...prev,
-              name: parsed.name || prev.name,
-            }));
-            setMcDetails((prev) => ({
-              ...prev,
-              name: parsed.name || prev.name,
-            }));
+            const upper = (parsed.name || "PRO EDITOR").toUpperCase();
+            setSadaDetails((prev) => ({ ...prev, name: upper }));
+            setNayaDetails((prev) => ({ ...prev, name: upper }));
+            setPaypakDetails((prev) => ({ ...prev, name: upper }));
           }
         }
       } catch {}
@@ -103,91 +122,110 @@ export default function CheckoutPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleCardNumberChange = (val: string, type: "visa" | "mastercard") => {
+  const handleCardNumberChange = (val: string, type: "sadapay" | "nayapay" | "paypak") => {
     const raw = val.replace(/\D/g, "").slice(0, 16);
     const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
-    if (type === "visa") {
-      setVisaDetails((prev) => ({ ...prev, number: formatted }));
+    if (type === "sadapay") {
+      setSadaDetails((prev) => ({ ...prev, number: formatted }));
+    } else if (type === "nayapay") {
+      setNayaDetails((prev) => ({ ...prev, number: formatted }));
     } else {
-      setMcDetails((prev) => ({ ...prev, number: formatted }));
+      setPaypakDetails((prev) => ({ ...prev, number: formatted }));
     }
   };
 
-  const handleCardExpiryChange = (val: string, type: "visa" | "mastercard") => {
+  const handleCardExpiryChange = (val: string, type: "sadapay" | "nayapay" | "paypak") => {
     let raw = val.replace(/\D/g, "").slice(0, 4);
     if (raw.length > 2) {
       raw = `${raw.slice(0, 2)}/${raw.slice(2)}`;
     }
-    if (type === "visa") {
-      setVisaDetails((prev) => ({ ...prev, expiry: raw }));
+    if (type === "sadapay") {
+      setSadaDetails((prev) => ({ ...prev, expiry: raw }));
+    } else if (type === "nayapay") {
+      setNayaDetails((prev) => ({ ...prev, expiry: raw }));
     } else {
-      setMcDetails((prev) => ({ ...prev, expiry: raw }));
+      setPaypakDetails((prev) => ({ ...prev, expiry: raw }));
     }
   };
 
-  const handleCardCvcChange = (val: string, type: "visa" | "mastercard") => {
+  const handleCardCvcChange = (val: string, type: "sadapay" | "nayapay" | "paypak") => {
     const raw = val.replace(/\D/g, "").slice(0, 4);
-    if (type === "visa") {
-      setVisaDetails((prev) => ({ ...prev, cvc: raw }));
+    if (type === "sadapay") {
+      setSadaDetails((prev) => ({ ...prev, cvc: raw }));
+    } else if (type === "nayapay") {
+      setNayaDetails((prev) => ({ ...prev, cvc: raw }));
     } else {
-      setMcDetails((prev) => ({ ...prev, cvc: raw }));
+      setPaypakDetails((prev) => ({ ...prev, cvc: raw }));
     }
   };
 
-  const fillDemoVisa = () => {
-    setVisaDetails({
-      number: "4532 8920 1204 8892",
-      expiry: "12/28",
-      cvc: "345",
-      name: formData.fullName || "Valued Customer",
+  const fillDemoSadaPay = () => {
+    setSadaDetails({
+      number: "4111 8920 7481 9924",
+      expiry: "11/29",
+      cvc: "831",
+      name: formData.fullName ? formData.fullName.toUpperCase() : "PRO EDITOR",
     });
   };
 
-  const fillDemoMastercard = () => {
-    setMcDetails({
-      number: "5412 7534 8901 6621",
-      expiry: "08/29",
-      cvc: "789",
-      name: formData.fullName || "Valued Customer",
+  const fillDemoNayaPay = () => {
+    setNayaDetails({
+      number: "4214 6702 3319 8812",
+      expiry: "07/30",
+      cvc: "492",
+      name: formData.fullName ? formData.fullName.toUpperCase() : "PRO EDITOR",
     });
   };
 
-  const getPaymentLabel = (method: PaymentMethodType = paymentMethod) => {
+  const fillDemoPayPak = () => {
+    setPaypakDetails({
+      number: "6038 9201 4458 7720",
+      expiry: "05/28",
+      cvc: "619",
+      name: formData.fullName ? formData.fullName.toUpperCase() : "PRO EDITOR",
+      bank: "Meezan Bank Pakistan",
+    });
+  };
+
+  const getPaymentLabel = (method: PakistaniPaymentType = paymentMethod) => {
     switch (method) {
-      case "visa": {
-        const last4 = visaDetails.number.replace(/\s/g, "").slice(-4) || "8892";
-        return `Visa (•••• ${last4})`;
+      case "sadapay": {
+        const last4 = sadaDetails.number.replace(/\s/g, "").slice(-4) || "9924";
+        return `SadaPay Card (•••• ${last4})`;
       }
-      case "mastercard": {
-        const last4 = mcDetails.number.replace(/\s/g, "").slice(-4) || "6621";
-        return `Mastercard (•••• ${last4})`;
+      case "nayapay": {
+        const last4 = nayaDetails.number.replace(/\s/g, "").slice(-4) || "8812";
+        return `NayaPay Visa (•••• ${last4})`;
       }
-      case "paypal":
-        return `PayPal (${formData.email || "customer@shopflow.com"})`;
-      case "applepay":
-        return "Apple Pay (Apple Card •••• 4021)";
-      case "googlepay":
-        return "Google Pay (•••• 9924)";
+      case "paypak": {
+        const last4 = paypakDetails.number.replace(/\s/g, "").slice(-4) || "7720";
+        return `PayPak 1LINK (${paypakDetails.bank} •••• ${last4})`;
+      }
+      case "jazzcash":
+        return `JazzCash Mobile Wallet (${jazzMobile})`;
+      case "easypaisa":
+        return `EasyPaisa Wallet (${easyMobile})`;
     }
   };
 
-  // Complete and save order helper
+  // Complete and save order
   const finalizeOrder = async (customLabel?: string) => {
     if (items.length === 0) return;
     setIsSubmitting(true);
 
     try {
-      const generatedId = "ORD-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+      const generatedId = createOrderId();
       const paymentLabel = customLabel || getPaymentLabel();
 
       const newOrder = {
         id: generatedId,
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         total: finalTotal,
+        pkrTotal: pkrTotal,
         status: "processing",
         paymentMethod: paymentLabel,
         items: items.map((item) => ({
@@ -207,7 +245,7 @@ export default function CheckoutPage() {
       clearCart();
       setOrderComplete(true);
     } catch {
-      alert("Failed to place simulated order.");
+      alert("Failed to place order.");
     } finally {
       setIsSubmitting(false);
     }
@@ -217,95 +255,89 @@ export default function CheckoutPage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (paymentMethod === "paypal") {
-      setShowPayPalModal(true);
+    if (paymentMethod === "jazzcash") {
+      setShowJazzModal(true);
       return;
     }
 
-    if (paymentMethod === "applepay") {
-      setShowApplePaySheet(true);
+    if (paymentMethod === "easypaisa") {
+      setShowEasyModal(true);
       return;
     }
 
-    if (paymentMethod === "googlepay") {
-      setShowGooglePaySheet(true);
-      return;
-    }
-
-    // Default card submission
+    // Default card submission (SadaPay, NayaPay, PayPak)
     finalizeOrder();
   };
 
-  // PayPal Sandbox Approval Simulation
-  const handleApprovePayPal = async () => {
-    setPayPalProcessing(true);
+  // JazzCash Approval Simulation
+  const handleApproveJazz = async () => {
+    setJazzProcessing(true);
     await new Promise((r) => setTimeout(r, 1200));
-    setPayPalProcessing(false);
-    setShowPayPalModal(false);
-    await finalizeOrder(`PayPal Sandbox (${payPalFundingSource === "balance" ? "Wallet Balance" : "Chase •••• 8192"})`);
+    setJazzProcessing(false);
+    setShowJazzModal(false);
+    await finalizeOrder(`JazzCash Wallet (Account: ${jazzMobile} • Ref #${createRefId("JC")})`);
   };
 
-  // Apple Pay Biometric Simulation
-  const handleTriggerApplePayBiometric = async () => {
-    setApplePayBiometricActive(true);
-    await new Promise((r) => setTimeout(r, 1100));
-    setApplePayDone(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setApplePayBiometricActive(false);
-    setShowApplePaySheet(false);
-    setApplePayDone(false);
-    await finalizeOrder("Apple Pay (Apple Card •••• 4021)");
-  };
-
-  // Google Pay Simulation
-  const handleApproveGooglePay = async () => {
-    setGooglePayProcessing(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setGooglePayDone(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setGooglePayProcessing(false);
-    setShowGooglePaySheet(false);
-    setGooglePayDone(false);
-    await finalizeOrder("Google Pay (GPay •••• 9924)");
+  // EasyPaisa Approval Simulation
+  const handleApproveEasy = async () => {
+    setEasyProcessing(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    setEasyProcessing(false);
+    setShowEasyModal(false);
+    await finalizeOrder(`EasyPaisa Wallet (Account: ${easyMobile} • TRX #${createRefId("EP")})`);
   };
 
   if (orderComplete) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-        <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600 animate-in zoom-in-75 duration-300">
-          <CheckCircle2 className="w-8 h-8" />
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6 animate-in fade-in duration-300">
+        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/20">
+          <CheckCircle2 className="w-10 h-10" />
         </div>
         <div className="space-y-3">
-          <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-            Payment Verified &amp; Order Confirmed
+          <span className="text-xs font-bold uppercase tracking-widest text-emerald-800 bg-emerald-100 border border-emerald-300 px-4 py-1.5 rounded-full inline-block">
+            Payment Verified &amp; Order Placed
           </span>
           <h1 className="font-integral text-3xl sm:text-4xl text-black">
-            THANK YOU FOR YOUR ORDER!
+            SHUKRIYA! ORDER CONFIRMED
           </h1>
           <p className="text-sm text-neutral-600">
-            Order Reference: <span className="font-mono text-black font-bold">{orderId}</span>
+            Order Reference: <span className="font-mono text-black font-extrabold">{orderId}</span>
           </p>
           {confirmedPaymentLabel && (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-100 border border-neutral-200 text-xs text-black font-medium">
-              <span>Paid via:</span>
-              <span className="font-bold">{confirmedPaymentLabel}</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-50 border border-teal-200 text-xs text-black font-medium shadow-xs">
+              <span className="text-teal-800 font-semibold">Pakistani Gateway:</span>
+              <span className="font-bold text-black">{confirmedPaymentLabel}</span>
             </div>
           )}
+          <div className="p-4 rounded-2xl bg-[#F8F9FA] border border-neutral-200 max-w-md mx-auto text-xs space-y-1">
+            <div className="flex justify-between text-neutral-600">
+              <span>Paid Amount (USD):</span>
+              <span className="font-bold text-black">{formatPrice(finalTotal)}</span>
+            </div>
+            <div className="flex justify-between text-neutral-600">
+              <span>Settled in PKR:</span>
+              <span className="font-extrabold text-emerald-700">{formatPKR(pkrTotal)}</span>
+            </div>
+            <div className="flex justify-between text-neutral-500 text-[11px] pt-1 border-t border-neutral-200">
+              <span>Delivery Address:</span>
+              <span className="font-medium text-black">{formData.address}, {formData.city}</span>
+            </div>
+          </div>
           <p className="text-xs text-neutral-500 max-w-md mx-auto pt-2">
-            A confirmation receipt and simulated shipment tracking details have been generated for <span className="text-black font-semibold">{formData.email}</span>. You can inspect this order anytime in your account.
+            A confirmation SMS &amp; receipt have been dispatched to <span className="text-black font-semibold">{formData.phone}</span> ({formData.email}).
           </p>
         </div>
 
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             onClick={() => router.push("/account")}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-full font-semibold text-white bg-black hover:bg-neutral-800 shadow-md text-sm transition-colors cursor-pointer"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-colors cursor-pointer"
           >
             View Account Orders
           </button>
           <button
             onClick={() => router.push("/products")}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-full font-semibold text-black bg-neutral-100 hover:bg-neutral-200 text-sm transition-colors cursor-pointer"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-full font-bold text-black bg-neutral-100 hover:bg-neutral-200 text-xs uppercase tracking-wider transition-colors cursor-pointer"
           >
             Continue Shopping
           </button>
@@ -323,7 +355,7 @@ export default function CheckoutPage() {
         </p>
         <Link
           href="/products"
-          className="inline-block px-8 py-3.5 rounded-full text-sm font-semibold text-white bg-black hover:bg-neutral-800 transition-colors"
+          className="inline-block px-8 py-3.5 rounded-full text-xs uppercase font-bold tracking-wider text-white bg-black hover:bg-neutral-800 transition-colors"
         >
           Browse Products
         </Link>
@@ -333,32 +365,67 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div>
-        <Link
-          href="/cart"
-          className="inline-flex items-center gap-2 text-xs text-neutral-500 hover:text-black transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Return to Cart</span>
-        </Link>
-        <h1 className="font-integral text-3xl sm:text-4xl text-black mt-3">
-          SECURE CHECKOUT
-        </h1>
-        <p className="text-sm text-neutral-500 mt-1">
-          Select your preferred payment method and complete your order instantly.
-        </p>
+      {/* Header with Pakistani Flag & Gateway Notice */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200">
+        <div>
+          <Link
+            href="/cart"
+            className="inline-flex items-center gap-2 text-xs text-neutral-500 hover:text-black transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Cart</span>
+          </Link>
+          <div className="flex items-center gap-3 mt-2">
+            <h1 className="font-integral text-3xl sm:text-4xl text-black">
+              CHECKOUT
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              🇵🇰 Pakistan Gateway Active
+            </span>
+          </div>
+          <p className="text-xs text-neutral-500 mt-1">
+            Official support for SadaPay, NayaPay, PayPak (1LINK), JazzCash, and EasyPaisa.
+          </p>
+        </div>
+
+        {/* Currency Rate Box */}
+        <div className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 text-right">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700 block">
+            State Bank Rate
+          </span>
+          <p className="font-mono text-xs font-extrabold text-black">
+            1 USD = {pkrRate.toFixed(2)} PKR
+          </p>
+          <span className="text-[10px] text-neutral-500 font-medium">
+            Zero International Markup
+          </span>
+        </div>
       </div>
 
       <form onSubmit={handleFormSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Shipping & Payment Methods */}
+        {/* Left Column: Shipping Form & Pakistani Payment Options */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Shipping Form */}
-          <div className="p-6 sm:p-8 rounded-3xl border border-neutral-200 bg-white space-y-5">
-            <h2 className="font-bold text-lg text-black">1. Shipping Information</h2>
+          
+          {/* Section 1: Shipping Information with colorful modern accent */}
+          <div className="p-6 sm:p-8 rounded-3xl border border-neutral-200 bg-white space-y-5 shadow-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                  1
+                </div>
+                <div>
+                  <h2 className="font-bold text-base text-black">Delivery &amp; Customer Information</h2>
+                  <p className="text-xs text-neutral-500">Shipping across all cities in Pakistan</p>
+                </div>
+              </div>
+              <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+                TCS / Leopards Courier
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
                   Full Name
                 </label>
                 <input
@@ -367,12 +434,27 @@ export default function CheckoutPage() {
                   required
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#F0F0F0] rounded-full text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-black"
+                  className="w-full px-4 py-3 bg-[#F8F9FA] border border-neutral-200 rounded-2xl text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                  Phone Number (for OTP &amp; Delivery)
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  placeholder="0300 1234567"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-[#F8F9FA] border border-neutral-200 rounded-2xl text-sm font-mono text-black placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
                   Email Address
                 </label>
                 <input
@@ -381,40 +463,50 @@ export default function CheckoutPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#F0F0F0] rounded-full text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-black"
+                  className="w-full px-4 py-3 bg-[#F8F9FA] border border-neutral-200 rounded-2xl text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                  Street Address
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                  Complete Street Address
                 </label>
                 <input
                   type="text"
                   name="address"
                   required
+                  placeholder="House / Flat #, Street, Sector / Area"
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#F0F0F0] rounded-full text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-black"
+                  className="w-full px-4 py-3 bg-[#F8F9FA] border border-neutral-200 rounded-2xl text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
                   City
                 </label>
-                <input
-                  type="text"
+                <select
                   name="city"
-                  required
                   value={formData.city}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#F0F0F0] rounded-full text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-black"
-                />
+                  className="w-full px-4 py-3 bg-[#F8F9FA] border border-neutral-200 rounded-2xl text-sm text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all cursor-pointer"
+                >
+                  <option value="Islamabad">Islamabad</option>
+                  <option value="Lahore">Lahore</option>
+                  <option value="Karachi">Karachi</option>
+                  <option value="Rawalpindi">Rawalpindi</option>
+                  <option value="Faisalabad">Faisalabad</option>
+                  <option value="Peshawar">Peshawar</option>
+                  <option value="Multan">Multan</option>
+                  <option value="Quetta">Quetta</option>
+                  <option value="Sialkot">Sialkot</option>
+                  <option value="Gujranwala">Gujranwala</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
                   Postal Code
                 </label>
                 <input
@@ -423,35 +515,40 @@ export default function CheckoutPage() {
                   required
                   value={formData.postalCode}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#F0F0F0] rounded-full text-sm text-black placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-black"
+                  className="w-full px-4 py-3 bg-[#F8F9FA] border border-neutral-200 rounded-2xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
                 />
               </div>
             </div>
           </div>
 
-          {/* Payment Method Section with 5 Distinct Options */}
-          <div className="p-6 sm:p-8 rounded-3xl border border-neutral-200 bg-white space-y-5">
+          {/* Section 2: Pakistani Payment Gateways with Vibrant Colors & Authentic Designs */}
+          <div className="p-6 sm:p-8 rounded-3xl border border-neutral-200 bg-white space-y-6 shadow-xs">
             <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
-              <div>
-                <h2 className="font-bold text-lg text-black">2. Payment Method</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Choose from 5 verified payment gateways
-                </p>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                  2
+                </div>
+                <div>
+                  <h2 className="font-bold text-base text-black">Select Pakistani Payment Gateway</h2>
+                  <p className="text-xs text-neutral-500">Fast, 3D secure simulation with Pakistani cards &amp; wallets</p>
+                </div>
               </div>
-              <span className="text-[11px] font-medium text-neutral-600 flex items-center gap-1.5 bg-neutral-50 px-2.5 py-1 rounded-full border border-neutral-200/60">
+              <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
                 <Lock className="w-3 h-3 text-emerald-600" />
-                <span>256-Bit SSL Encrypted</span>
+                <span>1LINK / SBP Verified</span>
               </span>
             </div>
 
-            <div className="space-y-3.5">
-              {/* Option 1: VISA */}
+            {/* 5 Distinct Pakistani Payment Options */}
+            <div className="space-y-4">
+              
+              {/* Option 1: SADAPAY (Teal & Peach Signature Aesthetic) */}
               <div
-                onClick={() => setPaymentMethod("visa")}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "visa"
-                    ? "border-black bg-neutral-50/60 ring-1 ring-black shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/30"
+                onClick={() => setPaymentMethod("sadapay")}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${
+                  paymentMethod === "sadapay"
+                    ? "border-[#00A896] bg-teal-50/40 shadow-md ring-2 ring-[#00A896]/20"
+                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -459,38 +556,37 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      checked={paymentMethod === "visa"}
-                      onChange={() => setPaymentMethod("visa")}
-                      className="w-4 h-4 text-black accent-black cursor-pointer"
+                      checked={paymentMethod === "sadapay"}
+                      onChange={() => setPaymentMethod("sadapay")}
+                      className="w-4 h-4 text-[#00A896] accent-[#00A896] cursor-pointer"
                     />
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-black">Visa Card</span>
-                      <span className="text-[10px] uppercase font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                        Zero Fee
+                      <span className="font-bold text-sm text-black">SadaPay Card</span>
+                      <span className="text-[10px] font-extrabold uppercase text-[#007063] bg-[#e0f7f4] px-2.5 py-0.5 rounded-full border border-[#00A896]/30">
+                        0% Foreign Fee
                       </span>
                     </div>
                   </div>
-                  {/* Visa Badge */}
-                  <div className="h-7 px-2.5 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Visa">
-                    <svg className="h-2.5 w-auto" viewBox="0 0 36 12" fill="none">
-                      <path d="M14.6 0.2L9.6 11.8H6.3L3.8 2.6C3.7 2 3.5 1.7 3.1 1.5C2.4 1.1 1.1 0.7 0.1 0.4L0.2 0.2H5.5C6.2 0.2 6.8 0.7 6.9 1.5L8.2 8.8L11.5 0.2H14.6ZM27.4 8.1C27.4 5.2 23.6 5 23.7 3.6C23.7 3.2 24.1 2.7 25 2.6C25.4 2.5 26.6 2.5 27.9 3.1L28.5 0.4C27.7 0.1 26.7 -0.2 25.5 -0.2C22.4 -0.2 20.2 1.5 20.2 4C20.1 5.9 21.7 6.9 22.9 7.5C24.1 8.1 24.6 8.5 24.6 9.1C24.5 9.9 23.6 10.3 22.7 10.3C21.1 10.4 20.1 9.9 19.4 9.5L18.8 12.3C19.6 12.7 21 13 22.4 13C25.7 13 27.8 11.3 27.4 8.1ZM35.5 11.8H38.4L35.9 0.2H33.2C32.6 0.2 32.1 0.6 31.9 1.1L27.3 11.8H30.8L31.5 9.7H35.8L36.2 11.8H35.5ZM32.5 7L33.9 2.7L34.7 7H32.5ZM19.6 0.2L17 11.8H13.8L16.4 0.2H19.6Z" fill="#1434CB"/>
-                    </svg>
+                  {/* SadaPay Badge */}
+                  <div className="h-8 px-3 rounded-lg bg-[#042A2B] text-white flex items-center justify-center shadow-xs">
+                    <span className="font-bold text-xs tracking-tight text-[#00A896]">sada<span className="text-[#FF7A59]">pay</span></span>
                   </div>
                 </div>
 
-                {paymentMethod === "visa" && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in duration-200">
-                    {/* Interactive 3D Virtual Visa Card */}
-                    <div className="relative w-full max-w-md mx-auto aspect-[1.586/1] rounded-2xl p-5 sm:p-6 bg-gradient-to-tr from-[#0b1b3d] via-[#1434CB] to-[#2563EB] text-white shadow-xl overflow-hidden border border-white/20 select-none">
-                      {/* Subtle card glow overlay */}
-                      <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-                      <div className="absolute -left-16 -bottom-16 w-48 h-48 rounded-full bg-blue-400/20 blur-2xl pointer-events-none" />
+                {paymentMethod === "sadapay" && (
+                  <div className="mt-5 pt-5 border-t border-teal-200/60 space-y-4 animate-in fade-in duration-200">
+                    
+                    {/* SadaPay 3D Virtual Card */}
+                    <div className="relative w-full max-w-md mx-auto aspect-[1.586/1] rounded-2xl p-5 sm:p-6 bg-gradient-to-tr from-[#022627] via-[#0B4F50] to-[#00A896] text-white shadow-2xl overflow-hidden border border-teal-300/30 select-none">
+                      {/* Trademark SadaPay Peach Accent Glow */}
+                      <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-[#FF7A59]/20 blur-2xl pointer-events-none" />
+                      <div className="absolute -left-12 -bottom-12 w-44 h-44 rounded-full bg-[#00A896]/30 blur-2xl pointer-events-none" />
 
                       <div className="relative z-10 flex flex-col justify-between h-full">
-                        {/* Top: Chip & Visa Logo */}
+                        {/* Top: Chip & SadaPay Logo */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            {/* EMV Chip */}
+                            {/* Metallic EMV Chip */}
                             <div className="w-10 h-7 rounded-md bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 border border-amber-400 shadow-inner flex items-center justify-center">
                               <div className="w-6 h-4 border border-amber-600/40 rounded-sm grid grid-cols-2 gap-0.5 opacity-60">
                                 <span className="border-r border-amber-600/40" />
@@ -498,41 +594,44 @@ export default function CheckoutPage() {
                               </div>
                             </div>
                             {/* Contactless Icon */}
-                            <svg className="w-5 h-5 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg className="w-5 h-5 text-teal-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M8.5 16.5a5 5 0 0 1 0-9" />
                               <path d="M12 19a8.5 8.5 0 0 0 0-14" />
                               <path d="M15.5 21.5a12 12 0 0 0 0-19" />
                             </svg>
                           </div>
-                          {/* Visa Wordmark White */}
-                          <span className="font-bold italic tracking-tighter text-xl text-white font-sans">
-                            VISA
-                          </span>
+                          {/* SadaPay Wordmark */}
+                          <div className="text-right">
+                            <span className="font-extrabold text-base tracking-tighter text-white">
+                              sada<span className="text-[#FF7A59]">pay</span>
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest block text-teal-200/80 font-bold">Debit</span>
+                          </div>
                         </div>
 
                         {/* Middle: Card Number */}
-                        <div className="py-2">
-                          <p className="font-mono text-base sm:text-xl tracking-[0.2em] font-semibold text-white/95 drop-shadow-md">
-                            {visaDetails.number || "•••• •••• •••• ••••"}
+                        <div className="py-1">
+                          <p className="font-mono text-base sm:text-xl tracking-[0.22em] font-bold text-white drop-shadow-md">
+                            {sadaDetails.number || "•••• •••• •••• ••••"}
                           </p>
                         </div>
 
                         {/* Bottom: Cardholder, Expiry & CVV */}
                         <div className="flex items-end justify-between text-xs">
-                          <div>
-                            <span className="text-[9px] uppercase tracking-wider text-white/60 block">Cardholder</span>
-                            <p className="font-medium tracking-wide uppercase truncate max-w-[170px] text-white">
-                              {visaDetails.name || formData.fullName || "VALUED CUSTOMER"}
+                          <div className="max-w-[190px]">
+                            <span className="text-[8px] uppercase tracking-wider text-teal-200 block font-bold">CARDHOLDER</span>
+                            <p className="font-medium tracking-wide uppercase truncate text-white">
+                              {sadaDetails.name || formData.fullName.toUpperCase()}
                             </p>
                           </div>
-                          <div className="flex items-center gap-4 text-right">
+                          <div className="flex items-center gap-3 text-right">
                             <div>
-                              <span className="text-[9px] uppercase tracking-wider text-white/60 block">Expires</span>
-                              <p className="font-mono font-medium text-white">{visaDetails.expiry || "MM/YY"}</p>
+                              <span className="text-[8px] uppercase tracking-wider text-teal-200 block font-bold">EXPIRES</span>
+                              <p className="font-mono font-bold text-white">{sadaDetails.expiry || "11/29"}</p>
                             </div>
-                            <div className={`transition-all px-2 py-0.5 rounded ${isCvvFocused ? "bg-amber-400/30 ring-1 ring-amber-300" : ""}`}>
-                              <span className="text-[9px] uppercase tracking-wider text-white/60 block">CVV</span>
-                              <p className="font-mono font-medium text-white">{visaDetails.cvc ? "•••" : "345"}</p>
+                            <div className={`transition-all px-2 py-0.5 rounded ${isCvvFocused ? "bg-[#FF7A59]/40 ring-1 ring-[#FF7A59]" : ""}`}>
+                              <span className="text-[8px] uppercase tracking-wider text-teal-200 block font-bold">CVV</span>
+                              <p className="font-mono font-bold text-white">{sadaDetails.cvc ? "•••" : "831"}</p>
                             </div>
                           </div>
                         </div>
@@ -541,101 +640,98 @@ export default function CheckoutPage() {
 
                     {/* Auto-fill Helper */}
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-xs text-neutral-500">Live Interactive Visa Card</span>
+                      <span className="text-xs text-neutral-500 font-medium">SadaPay Virtual / Physical Card</span>
                       <button
                         type="button"
-                        onClick={fillDemoVisa}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+                        onClick={fillDemoSadaPay}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#007063] hover:text-[#004d44] bg-[#e0f7f4] hover:bg-[#cbf1eb] px-3.5 py-1.5 rounded-full transition-colors cursor-pointer"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>Auto-fill Demo Visa</span>
+                        <span>Auto-fill Demo SadaPay</span>
                       </button>
                     </div>
 
                     {/* Form Inputs */}
-                    <div className="space-y-3.5 pt-1">
+                    <div className="space-y-3.5">
                       <div>
-                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                          Visa Card Number
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                          SadaPay 16-Digit Card Number
                         </label>
                         <input
                           type="text"
-                          placeholder="4532 8920 1204 8892"
-                          value={visaDetails.number}
-                          onChange={(e) => handleCardNumberChange(e.target.value, "visa")}
+                          placeholder="4111 8920 7481 9924"
+                          value={sadaDetails.number}
+                          onChange={(e) => handleCardNumberChange(e.target.value, "sadapay")}
                           maxLength={19}
-                          className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                          className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#00A896]/20 focus:border-[#00A896]"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
                             Expiration Date
                           </label>
                           <input
                             type="text"
                             placeholder="MM/YY"
-                            value={visaDetails.expiry}
-                            onChange={(e) => handleCardExpiryChange(e.target.value, "visa")}
+                            value={sadaDetails.expiry}
+                            onChange={(e) => handleCardExpiryChange(e.target.value, "sadapay")}
                             maxLength={5}
-                            className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                            className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#00A896]/20 focus:border-[#00A896]"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                            Security Code (CVV)
+                          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                            Security Code (CVC)
                           </label>
                           <input
                             type="text"
-                            placeholder="345"
-                            value={visaDetails.cvc}
-                            onChange={(e) => handleCardCvcChange(e.target.value, "visa")}
+                            placeholder="831"
+                            value={sadaDetails.cvc}
+                            onChange={(e) => handleCardCvcChange(e.target.value, "sadapay")}
                             onFocus={() => setIsCvvFocused(true)}
                             onBlur={() => setIsCvvFocused(false)}
-                            maxLength={4}
-                            className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                            maxLength={3}
+                            className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#00A896]/20 focus:border-[#00A896]"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
                           Name on Card
                         </label>
                         <input
                           type="text"
-                          placeholder="Valued Customer"
-                          value={visaDetails.name}
-                          onChange={(e) => setVisaDetails({ ...visaDetails, name: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm text-black outline-none focus:ring-1 focus:ring-black"
+                          placeholder="PRO EDITOR"
+                          value={sadaDetails.name}
+                          onChange={(e) => setSadaDetails({ ...sadaDetails, name: e.target.value.toUpperCase() })}
+                          className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-semibold uppercase text-black outline-none focus:ring-2 focus:ring-[#00A896]/20 focus:border-[#00A896]"
                         />
                       </div>
                     </div>
 
-                    {/* Direct Pay with Visa Action */}
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() => finalizeOrder()}
-                        disabled={isSubmitting}
-                        className="w-full py-3.5 rounded-full font-semibold text-white bg-[#1434CB] hover:bg-[#0f28a3] shadow-md text-sm transition-all hover:scale-[1.005] active:scale-[0.995] cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        <Lock className="w-4 h-4" />
-                        <span>Pay {formatPrice(finalTotal)} with Visa</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => finalizeOrder()}
+                      disabled={isSubmitting}
+                      className="w-full py-3.5 rounded-full font-bold text-white bg-[#00A896] hover:bg-[#008f80] shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>Pay {formatPrice(finalTotal)} ({formatPKR(pkrTotal)}) via SadaPay</span>
+                    </button>
                   </div>
                 )}
               </div>
 
-              {/* Option 2: MASTERCARD */}
+              {/* Option 2: NAYAPAY (Sunset Orange & Magenta Aesthetic) */}
               <div
-                onClick={() => setPaymentMethod("mastercard")}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "mastercard"
-                    ? "border-black bg-neutral-50/60 ring-1 ring-black shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/30"
+                onClick={() => setPaymentMethod("nayapay")}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${
+                  paymentMethod === "nayapay"
+                    ? "border-[#FF512F] bg-orange-50/40 shadow-md ring-2 ring-[#FF512F]/20"
+                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -643,36 +739,31 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      checked={paymentMethod === "mastercard"}
-                      onChange={() => setPaymentMethod("mastercard")}
-                      className="w-4 h-4 text-black accent-black cursor-pointer"
+                      checked={paymentMethod === "nayapay"}
+                      onChange={() => setPaymentMethod("nayapay")}
+                      className="w-4 h-4 text-[#FF512F] accent-[#FF512F] cursor-pointer"
                     />
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-black">Mastercard</span>
-                      <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                        Identity Check
+                      <span className="font-bold text-sm text-black">NayaPay Visa</span>
+                      <span className="text-[10px] font-extrabold uppercase text-[#b83800] bg-[#ffece6] px-2.5 py-0.5 rounded-full border border-[#FF512F]/30">
+                        EMI Verified
                       </span>
                     </div>
                   </div>
-                  {/* Mastercard Badge */}
-                  <div className="h-7 px-2 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Mastercard">
-                    <svg className="h-4 w-auto" viewBox="0 0 32 20" fill="none">
-                      <circle cx="10" cy="10" r="9" fill="#EB001B"/>
-                      <circle cx="22" cy="10" r="9" fill="#F79E1B"/>
-                      <path d="M16 3.6A8.99 8.99 0 0013 10c0 2.58 1.1 4.9 2.85 6.4A8.99 8.99 0 0019 10c0-2.58-1.1-4.9-2.85-6.4z" fill="#FF5F00"/>
-                    </svg>
+                  {/* NayaPay Badge */}
+                  <div className="h-8 px-3 rounded-lg bg-gradient-to-r from-[#FF512F] to-[#DD2476] text-white flex items-center justify-center shadow-xs font-bold text-xs tracking-tight">
+                    NayaPay
                   </div>
                 </div>
 
-                {paymentMethod === "mastercard" && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in duration-200">
-                    {/* Interactive 3D Virtual Mastercard */}
-                    <div className="relative w-full max-w-md mx-auto aspect-[1.586/1] rounded-2xl p-5 sm:p-6 bg-gradient-to-tr from-[#121212] via-[#211d1d] to-[#3a1b1b] text-white shadow-xl overflow-hidden border border-white/20 select-none">
-                      <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-red-500/15 blur-2xl pointer-events-none" />
-                      <div className="absolute -left-16 -bottom-16 w-48 h-48 rounded-full bg-amber-500/15 blur-2xl pointer-events-none" />
+                {paymentMethod === "nayapay" && (
+                  <div className="mt-5 pt-5 border-t border-orange-200/60 space-y-4 animate-in fade-in duration-200">
+                    
+                    {/* NayaPay 3D Virtual Card */}
+                    <div className="relative w-full max-w-md mx-auto aspect-[1.586/1] rounded-2xl p-5 sm:p-6 bg-gradient-to-tr from-[#FF512F] via-[#DD2476] to-[#8E2DE2] text-white shadow-2xl overflow-hidden border border-orange-300/30 select-none">
+                      <div className="absolute -right-12 -top-12 w-44 h-44 rounded-full bg-white/20 blur-2xl pointer-events-none" />
 
                       <div className="relative z-10 flex flex-col justify-between h-full">
-                        {/* Top: Chip & Mastercard Logo */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-7 rounded-md bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 border border-amber-400 shadow-inner flex items-center justify-center">
@@ -687,39 +778,35 @@ export default function CheckoutPage() {
                               <path d="M15.5 21.5a12 12 0 0 0 0-19" />
                             </svg>
                           </div>
-                          {/* Mastercard Circles */}
-                          <div className="flex items-center">
-                            <svg className="h-6 w-auto" viewBox="0 0 32 20" fill="none">
-                              <circle cx="10" cy="10" r="9" fill="#EB001B"/>
-                              <circle cx="22" cy="10" r="9" fill="#F79E1B"/>
-                              <path d="M16 3.6A8.99 8.99 0 0013 10c0 2.58 1.1 4.9 2.85 6.4A8.99 8.99 0 0019 10c0-2.58-1.1-4.9-2.85-6.4z" fill="#FF5F00"/>
-                            </svg>
+                          <div className="text-right">
+                            <span className="font-extrabold text-base tracking-tight text-white">
+                              NayaPay
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest block text-orange-100 font-bold">Visa Debit</span>
                           </div>
                         </div>
 
-                        {/* Middle: Card Number */}
-                        <div className="py-2">
-                          <p className="font-mono text-base sm:text-xl tracking-[0.2em] font-semibold text-white/95 drop-shadow-md">
-                            {mcDetails.number || "•••• •••• •••• ••••"}
+                        <div className="py-1">
+                          <p className="font-mono text-base sm:text-xl tracking-[0.22em] font-bold text-white drop-shadow-md">
+                            {nayaDetails.number || "•••• •••• •••• ••••"}
                           </p>
                         </div>
 
-                        {/* Bottom: Cardholder, Expiry & CVV */}
                         <div className="flex items-end justify-between text-xs">
-                          <div>
-                            <span className="text-[9px] uppercase tracking-wider text-white/60 block">Cardholder</span>
-                            <p className="font-medium tracking-wide uppercase truncate max-w-[170px] text-white">
-                              {mcDetails.name || formData.fullName || "VALUED CUSTOMER"}
+                          <div className="max-w-[190px]">
+                            <span className="text-[8px] uppercase tracking-wider text-orange-200 block font-bold">CARDHOLDER</span>
+                            <p className="font-medium tracking-wide uppercase truncate text-white">
+                              {nayaDetails.name || formData.fullName.toUpperCase()}
                             </p>
                           </div>
-                          <div className="flex items-center gap-4 text-right">
+                          <div className="flex items-center gap-3 text-right">
                             <div>
-                              <span className="text-[9px] uppercase tracking-wider text-white/60 block">Expires</span>
-                              <p className="font-mono font-medium text-white">{mcDetails.expiry || "MM/YY"}</p>
+                              <span className="text-[8px] uppercase tracking-wider text-orange-200 block font-bold">EXPIRES</span>
+                              <p className="font-mono font-bold text-white">{nayaDetails.expiry || "07/30"}</p>
                             </div>
-                            <div className={`transition-all px-2 py-0.5 rounded ${isCvvFocused ? "bg-amber-400/30 ring-1 ring-amber-300" : ""}`}>
-                              <span className="text-[9px] uppercase tracking-wider text-white/60 block">CVV</span>
-                              <p className="font-mono font-medium text-white">{mcDetails.cvc ? "•••" : "789"}</p>
+                            <div className={`transition-all px-2 py-0.5 rounded ${isCvvFocused ? "bg-white/40 ring-1 ring-white" : ""}`}>
+                              <span className="text-[8px] uppercase tracking-wider text-orange-200 block font-bold">CVV</span>
+                              <p className="font-mono font-bold text-white">{nayaDetails.cvc ? "•••" : "492"}</p>
                             </div>
                           </div>
                         </div>
@@ -728,101 +815,98 @@ export default function CheckoutPage() {
 
                     {/* Auto-fill Helper */}
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-xs text-neutral-500">Live Interactive Mastercard</span>
+                      <span className="text-xs text-neutral-500 font-medium">NayaPay Visa Debit Card</span>
                       <button
                         type="button"
-                        onClick={fillDemoMastercard}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+                        onClick={fillDemoNayaPay}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#b83800] hover:text-[#8f2c00] bg-[#ffece6] hover:bg-[#ffd9cc] px-3.5 py-1.5 rounded-full transition-colors cursor-pointer"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>Auto-fill Demo Mastercard</span>
+                        <span>Auto-fill Demo NayaPay</span>
                       </button>
                     </div>
 
                     {/* Form Inputs */}
-                    <div className="space-y-3.5 pt-1">
+                    <div className="space-y-3.5">
                       <div>
-                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                          Mastercard Number
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                          NayaPay Card Number
                         </label>
                         <input
                           type="text"
-                          placeholder="5412 7534 8901 6621"
-                          value={mcDetails.number}
-                          onChange={(e) => handleCardNumberChange(e.target.value, "mastercard")}
+                          placeholder="4214 6702 3319 8812"
+                          value={nayaDetails.number}
+                          onChange={(e) => handleCardNumberChange(e.target.value, "nayapay")}
                           maxLength={19}
-                          className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                          className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#FF512F]/20 focus:border-[#FF512F]"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
                             Expiration Date
                           </label>
                           <input
                             type="text"
                             placeholder="MM/YY"
-                            value={mcDetails.expiry}
-                            onChange={(e) => handleCardExpiryChange(e.target.value, "mastercard")}
+                            value={nayaDetails.expiry}
+                            onChange={(e) => handleCardExpiryChange(e.target.value, "nayapay")}
                             maxLength={5}
-                            className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                            className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#FF512F]/20 focus:border-[#FF512F]"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                            Security Code (CVC)
+                          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                            Security Code (CVV)
                           </label>
                           <input
                             type="text"
-                            placeholder="789"
-                            value={mcDetails.cvc}
-                            onChange={(e) => handleCardCvcChange(e.target.value, "mastercard")}
+                            placeholder="492"
+                            value={nayaDetails.cvc}
+                            onChange={(e) => handleCardCvcChange(e.target.value, "nayapay")}
                             onFocus={() => setIsCvvFocused(true)}
                             onBlur={() => setIsCvvFocused(false)}
-                            maxLength={4}
-                            className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                            maxLength={3}
+                            className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#FF512F]/20 focus:border-[#FF512F]"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
                           Name on Card
                         </label>
                         <input
                           type="text"
-                          placeholder="Valued Customer"
-                          value={mcDetails.name}
-                          onChange={(e) => setMcDetails({ ...mcDetails, name: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm text-black outline-none focus:ring-1 focus:ring-black"
+                          placeholder="PRO EDITOR"
+                          value={nayaDetails.name}
+                          onChange={(e) => setNayaDetails({ ...nayaDetails, name: e.target.value.toUpperCase() })}
+                          className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-semibold uppercase text-black outline-none focus:ring-2 focus:ring-[#FF512F]/20 focus:border-[#FF512F]"
                         />
                       </div>
                     </div>
 
-                    {/* Direct Pay with Mastercard Action */}
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() => finalizeOrder()}
-                        disabled={isSubmitting}
-                        className="w-full py-3.5 rounded-full font-semibold text-white bg-black hover:bg-neutral-800 shadow-md text-sm transition-all hover:scale-[1.005] active:scale-[0.995] cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        <Lock className="w-4 h-4" />
-                        <span>Pay {formatPrice(finalTotal)} with Mastercard</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => finalizeOrder()}
+                      disabled={isSubmitting}
+                      className="w-full py-3.5 rounded-full font-bold text-white bg-gradient-to-r from-[#FF512F] to-[#DD2476] hover:opacity-95 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>Pay {formatPrice(finalTotal)} ({formatPKR(pkrTotal)}) via NayaPay</span>
+                    </button>
                   </div>
                 )}
               </div>
 
-              {/* Option 3: PAYPAL */}
+              {/* Option 3: PAYPAK / 1LINK (Pakistan National Card Scheme - Emerald & Gold) */}
               <div
-                onClick={() => setPaymentMethod("paypal")}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "paypal"
-                    ? "border-black bg-neutral-50/60 ring-1 ring-black shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/30"
+                onClick={() => setPaymentMethod("paypak")}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${
+                  paymentMethod === "paypak"
+                    ? "border-emerald-600 bg-emerald-50/40 shadow-md ring-2 ring-emerald-600/20"
+                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -830,75 +914,266 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      checked={paymentMethod === "paypal"}
-                      onChange={() => setPaymentMethod("paypal")}
-                      className="w-4 h-4 text-black accent-black cursor-pointer"
+                      checked={paymentMethod === "paypak"}
+                      onChange={() => setPaymentMethod("paypak")}
+                      className="w-4 h-4 text-emerald-600 accent-emerald-600 cursor-pointer"
                     />
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-black">PayPal</span>
-                      <span className="text-[10px] uppercase font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
-                        Buyer Protection
+                      <span className="font-bold text-sm text-black">PayPak (1LINK Domestic)</span>
+                      <span className="text-[10px] font-extrabold uppercase text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                        SBP National Scheme
                       </span>
                     </div>
                   </div>
-                  {/* PayPal Badge */}
-                  <div className="h-7 px-2.5 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="PayPal">
-                    <svg className="h-3.5 w-auto" viewBox="0 0 28 20" fill="none">
-                      <path d="M9.8 18.5H6.2C5.9 18.5 5.7 18.3 5.6 18L3 2.5C2.9 2.2 3.1 1.9 3.4 1.9H11.5C14.8 1.9 17.1 2.6 18 4.2C18.6 5.1 18.7 6.3 18.2 7.7C17.6 9.7 16.1 11.2 14.2 11.8C13.6 12 12.8 12.1 11.9 12.1H9.9L8.6 18.2C8.6 18.4 8.8 18.5 9 18.5H9.8Z" fill="#003087"/>
-                      <path d="M12.3 6.8H8.8C8.6 6.8 8.4 7 8.3 7.2L6.6 18C6.5 18.2 6.7 18.4 6.9 18.4H10.1C10.3 18.4 10.5 18.2 10.6 18L11.5 12.8C11.5 12.6 11.7 12.4 12 12.4H13.6C16.5 12.4 18.8 11.2 19.4 7.7C19.7 6 19.3 4.6 18.3 3.6C17.7 5.2 15.6 6.8 12.3 6.8Z" fill="#0079C1"/>
-                    </svg>
+                  {/* PayPak Badge */}
+                  <div className="h-8 px-3 rounded-lg bg-[#004225] border border-amber-400 text-white flex items-center justify-center shadow-xs">
+                    <span className="font-extrabold text-xs tracking-wider text-amber-300">PayPak</span>
                   </div>
                 </div>
 
-                {paymentMethod === "paypal" && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in duration-200">
-                    <div className="p-4 rounded-xl bg-sky-50/70 border border-sky-100 flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#003087] text-white flex items-center justify-center shrink-0 font-bold text-xs">
-                        P
+                {paymentMethod === "paypak" && (
+                  <div className="mt-5 pt-5 border-t border-emerald-200/60 space-y-4 animate-in fade-in duration-200">
+                    
+                    {/* PayPak 3D Virtual Card */}
+                    <div className="relative w-full max-w-md mx-auto aspect-[1.586/1] rounded-2xl p-5 sm:p-6 bg-gradient-to-tr from-[#003822] via-[#0B6623] to-[#15803d] text-white shadow-2xl overflow-hidden border border-amber-300/40 select-none">
+                      {/* Pakistani Crescent & Star Watermark */}
+                      <div className="absolute right-4 bottom-4 w-32 h-32 rounded-full border-8 border-white/5 opacity-40 pointer-events-none" />
+
+                      <div className="relative z-10 flex flex-col justify-between h-full">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-7 rounded-md bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 border border-amber-400 shadow-inner flex items-center justify-center">
+                              <div className="w-6 h-4 border border-amber-600/40 rounded-sm grid grid-cols-2 gap-0.5 opacity-60">
+                                <span className="border-r border-amber-600/40" />
+                                <span />
+                              </div>
+                            </div>
+                            <span className="font-bold text-xs tracking-wider text-amber-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-amber-300/40">
+                              1LINK
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-extrabold text-lg tracking-wider text-amber-300 font-sans">
+                              PayPak
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest block text-emerald-200 font-bold">{paypakDetails.bank}</span>
+                          </div>
+                        </div>
+
+                        <div className="py-1">
+                          <p className="font-mono text-base sm:text-xl tracking-[0.22em] font-bold text-white drop-shadow-md">
+                            {paypakDetails.number || "•••• •••• •••• ••••"}
+                          </p>
+                        </div>
+
+                        <div className="flex items-end justify-between text-xs">
+                          <div className="max-w-[190px]">
+                            <span className="text-[8px] uppercase tracking-wider text-emerald-200 block font-bold">CARDHOLDER</span>
+                            <p className="font-medium tracking-wide uppercase truncate text-white">
+                              {paypakDetails.name || formData.fullName.toUpperCase()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 text-right">
+                            <div>
+                              <span className="text-[8px] uppercase tracking-wider text-emerald-200 block font-bold">VALID THRU</span>
+                              <p className="font-mono font-bold text-white">{paypakDetails.expiry || "05/28"}</p>
+                            </div>
+                            <div className={`transition-all px-2 py-0.5 rounded ${isCvvFocused ? "bg-amber-400/40 ring-1 ring-amber-300" : ""}`}>
+                              <span className="text-[8px] uppercase tracking-wider text-emerald-200 block font-bold">CVV</span>
+                              <p className="font-mono font-bold text-white">{paypakDetails.cvc ? "•••" : "619"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Auto-fill Helper */}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-neutral-500 font-medium">All Pakistani Commercial Banks</span>
+                      <button
+                        type="button"
+                        onClick={fillDemoPayPak}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-100 hover:bg-emerald-200 px-3.5 py-1.5 rounded-full transition-colors cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Auto-fill Demo PayPak</span>
+                      </button>
+                    </div>
+
+                    {/* Form Inputs */}
+                    <div className="space-y-3.5">
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                          Issuing Pakistani Bank
+                        </label>
+                        <select
+                          value={paypakDetails.bank}
+                          onChange={(e) => setPaypakDetails({ ...paypakDetails, bank: e.target.value })}
+                          className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600"
+                        >
+                          <option value="Meezan Bank">Meezan Bank (Islamic Banking)</option>
+                          <option value="Habib Bank Limited (HBL)">Habib Bank Limited (HBL)</option>
+                          <option value="United Bank Limited (UBL)">United Bank Limited (UBL)</option>
+                          <option value="Bank Alfalah">Bank Alfalah</option>
+                          <option value="MCB Bank">MCB Bank</option>
+                          <option value="Faysal Bank">Faysal Bank</option>
+                          <option value="National Bank of Pakistan (NBP)">National Bank of Pakistan (NBP)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                          PayPak 16-Digit Card Number
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="6038 9201 4458 7720"
+                          value={paypakDetails.number}
+                          onChange={(e) => handleCardNumberChange(e.target.value, "paypak")}
+                          maxLength={19}
+                          className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                            Expiration Date
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="MM/YY"
+                            value={paypakDetails.expiry}
+                            onChange={(e) => handleCardExpiryChange(e.target.value, "paypak")}
+                            maxLength={5}
+                            className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                            Security Code (CVV)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="619"
+                            value={paypakDetails.cvc}
+                            onChange={(e) => handleCardCvcChange(e.target.value, "paypak")}
+                            onFocus={() => setIsCvvFocused(true)}
+                            onBlur={() => setIsCvvFocused(false)}
+                            maxLength={3}
+                            className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => finalizeOrder()}
+                      disabled={isSubmitting}
+                      className="w-full py-3.5 rounded-full font-bold text-white bg-[#004225] hover:bg-[#002f1a] shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Lock className="w-4 h-4 text-amber-300" />
+                      <span>Pay {formatPrice(finalTotal)} ({formatPKR(pkrTotal)}) via PayPak</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Option 4: JAZZCASH (Crimson Red & Golden Amber Aesthetic) */}
+              <div
+                onClick={() => setPaymentMethod("jazzcash")}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${
+                  paymentMethod === "jazzcash"
+                    ? "border-[#EC1C24] bg-red-50/40 shadow-md ring-2 ring-[#EC1C24]/20"
+                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === "jazzcash"}
+                      onChange={() => setPaymentMethod("jazzcash")}
+                      className="w-4 h-4 text-[#EC1C24] accent-[#EC1C24] cursor-pointer"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-black">JazzCash Mobile Wallet</span>
+                      <span className="text-[10px] font-extrabold uppercase text-[#9c0f14] bg-[#ffebee] px-2.5 py-0.5 rounded-full border border-[#EC1C24]/30">
+                        Instant USSD / MPIN
+                      </span>
+                    </div>
+                  </div>
+                  {/* JazzCash Badge */}
+                  <div className="h-8 px-3 rounded-lg bg-[#EC1C24] text-white flex items-center justify-center shadow-xs font-bold text-xs tracking-wider">
+                    Jazz<span className="text-[#FFC20E]">Cash</span>
+                  </div>
+                </div>
+
+                {paymentMethod === "jazzcash" && (
+                  <div className="mt-5 pt-5 border-t border-red-200/60 space-y-4 animate-in fade-in duration-200">
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-red-50 to-amber-50 border border-red-200/80 flex items-start gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-[#EC1C24] text-white flex items-center justify-center shrink-0 shadow-sm font-bold text-sm">
+                        JC
                       </div>
                       <div className="text-xs space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-black">Sandbox Verified Buyer Account</span>
-                          <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">Active</span>
-                        </div>
+                        <p className="font-bold text-black">Mobilink Microfinance Bank Limited</p>
                         <p className="text-neutral-600">
-                          Account: <span className="font-mono font-medium text-black">ayesha.siddiqa@sandbox.paypal.com</span>
+                          Approve payment directly from your JazzCash wallet via instant mobile authorization prompt.
                         </p>
-                        <p className="text-neutral-500">
-                          Available PayPal Balance: <span className="font-bold text-black">$3,450.00 USD</span>
+                        <p className="text-[11px] font-mono text-[#EC1C24] font-bold">
+                          Converted Total: {formatPKR(pkrTotal)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      {/* Official PayPal Button */}
-                      <button
-                        type="button"
-                        onClick={() => setShowPayPalModal(true)}
-                        className="w-full py-3.5 rounded-full font-bold text-[#003087] bg-[#FFC439] hover:bg-[#f4b82d] shadow-sm text-sm transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <svg className="h-4 w-auto" viewBox="0 0 28 20" fill="none">
-                          <path d="M9.8 18.5H6.2C5.9 18.5 5.7 18.3 5.6 18L3 2.5C2.9 2.2 3.1 1.9 3.4 1.9H11.5C14.8 1.9 17.1 2.6 18 4.2C18.6 5.1 18.7 6.3 18.2 7.7C17.6 9.7 16.1 11.2 14.2 11.8C13.6 12 12.8 12.1 11.9 12.1H9.9L8.6 18.2C8.6 18.4 8.8 18.5 9 18.5H9.8Z" fill="#003087"/>
-                          <path d="M12.3 6.8H8.8C8.6 6.8 8.4 7 8.3 7.2L6.6 18C6.5 18.2 6.7 18.4 6.9 18.4H10.1C10.3 18.4 10.5 18.2 10.6 18L11.5 12.8C11.5 12.6 11.7 12.4 12 12.4H13.6C16.5 12.4 18.8 11.2 19.4 7.7C19.7 6 19.3 4.6 18.3 3.6C17.7 5.2 15.6 6.8 12.3 6.8Z" fill="#0079C1"/>
-                        </svg>
-                        <span>Pay with PayPal ({formatPrice(finalTotal)})</span>
-                      </button>
-
-                      <p className="text-[11px] text-center text-neutral-400">
-                        Clicking launches the interactive simulated PayPal payment confirmation window.
-                      </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                          JazzCash Mobile Number
+                        </label>
+                        <input
+                          type="tel"
+                          placeholder="0300 1234567"
+                          value={jazzMobile}
+                          onChange={(e) => setJazzMobile(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#EC1C24]/20 focus:border-[#EC1C24]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                          Account CNIC (Last 6 Digits)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="37405-1234567-1"
+                          value={jazzCnic}
+                          onChange={(e) => setJazzCnic(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#EC1C24]/20 focus:border-[#EC1C24]"
+                        />
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowJazzModal(true)}
+                      className="w-full py-3.5 rounded-full font-bold text-white bg-[#EC1C24] hover:bg-[#c9141b] shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Zap className="w-4 h-4 text-[#FFC20E]" />
+                      <span>Authorize {formatPKR(pkrTotal)} with JazzCash</span>
+                    </button>
                   </div>
                 )}
               </div>
 
-              {/* Option 4: APPLE PAY */}
+              {/* Option 5: EASYPAISA (Electric Green & Forest Aesthetic) */}
               <div
-                onClick={() => setPaymentMethod("applepay")}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "applepay"
-                    ? "border-black bg-neutral-50/60 ring-1 ring-black shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/30"
+                onClick={() => setPaymentMethod("easypaisa")}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${
+                  paymentMethod === "easypaisa"
+                    ? "border-[#00A551] bg-green-50/40 shadow-md ring-2 ring-[#00A551]/20"
+                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -906,149 +1181,82 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      checked={paymentMethod === "applepay"}
-                      onChange={() => setPaymentMethod("applepay")}
-                      className="w-4 h-4 text-black accent-black cursor-pointer"
+                      checked={paymentMethod === "easypaisa"}
+                      onChange={() => setPaymentMethod("easypaisa")}
+                      className="w-4 h-4 text-[#00A551] accent-[#00A551] cursor-pointer"
                     />
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-black">Apple Pay</span>
-                      <span className="text-[10px] uppercase font-bold text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded-full border border-neutral-200">
-                        1-Touch Biometric
+                      <span className="font-bold text-sm text-black">EasyPaisa Mobile Wallet</span>
+                      <span className="text-[10px] font-extrabold uppercase text-[#007338] bg-[#e6f7ee] px-2.5 py-0.5 rounded-full border border-[#00A551]/30">
+                        Telenor Bank
                       </span>
                     </div>
                   </div>
-                  {/* Apple Pay Badge */}
-                  <div className="h-7 px-2.5 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Apple Pay">
-                    <svg className="h-3.5 w-auto" viewBox="0 0 36 15" fill="black">
-                      <path d="M4.6 0.1C4.3 0.6 3.9 1.1 3.4 1.4C2.9 1.8 2.3 2 1.8 2C1.7 1.4 1.9 0.8 2.3 0.4C2.7 0.1 3.4 -0.1 4.6 0.1ZM4.7 2.2C4.1 2.2 3.6 2.5 3.3 2.5C3 2.5 2.5 2.2 2 2.2C1.1 2.2 0.3 2.8 0 3.8C-0.3 5.4 0.6 7.9 1.7 9.8C2.1 10.4 2.5 11 3.1 11C3.6 11 3.8 10.7 4.5 10.7C5.1 10.7 5.3 11 5.9 11C6.5 11 7 10.4 7.4 9.8C7.9 9 8.2 8.3 8.3 8C7.4 7.6 6.8 6.6 6.8 5.6C6.8 4.3 7.8 3.4 8.8 3.1C8.2 2.4 7.3 2.2 6.6 2.2C5.9 2.2 5.3 2.5 4.7 2.2Z"/>
-                      <path d="M12.5 2.3H10V11H11.5V7.9H12.5C14.4 7.9 15.7 6.8 15.7 5.1C15.7 3.4 14.4 2.3 12.5 2.3ZM12.4 6.6H11.5V3.6H12.4C13.5 3.6 14.1 4.2 14.1 5.1C14.1 6 13.5 6.6 12.4 6.6ZM19.7 11V5.7H18.3V6.7C18 6 17.2 5.5 16.3 5.5C15 5.5 14 6.6 14 8.3C14 10 15 11.1 16.3 11.1C17.2 11.1 18 10.6 18.3 9.9V11H19.7ZM16.8 9.9C15.9 9.9 15.4 9.2 15.4 8.3C15.4 7.4 15.9 6.7 16.8 6.7C17.7 6.7 18.3 7.4 18.3 8.3C18.3 9.2 17.7 9.9 16.8 9.9ZM21 13.5C22.6 13.5 23.4 12.8 23.9 11.3L26.5 5.7H25L23.3 9.9L21.6 5.7H20L22.2 10.8L21.7 12.2C21.4 12.5 21.1 12.6 20.8 12.6C20.6 12.6 20.3 12.6 20.1 12.5L20 13.4C20.3 13.5 20.6 13.5 21 13.5Z"/>
-                    </svg>
+                  {/* EasyPaisa Badge */}
+                  <div className="h-8 px-3 rounded-lg bg-[#00A551] text-white flex items-center justify-center shadow-xs font-bold text-xs tracking-tight">
+                    easypaisa
                   </div>
                 </div>
 
-                {paymentMethod === "applepay" && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in duration-200">
-                    <div className="p-4 rounded-xl bg-neutral-900 text-white flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-7 rounded-md bg-gradient-to-tr from-neutral-200 to-white text-black font-semibold text-[10px] flex items-center justify-center shadow-xs">
-                          Card
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold">Apple Card (•••• 4021)</p>
-                          <p className="text-[11px] text-neutral-400">{formData.fullName || "Valued Customer"} • Default</p>
-                        </div>
+                {paymentMethod === "easypaisa" && (
+                  <div className="mt-5 pt-5 border-t border-green-200/60 space-y-4 animate-in fade-in duration-200">
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-green-50 border border-green-200/80 flex items-start gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-[#00A551] text-white flex items-center justify-center shrink-0 shadow-sm font-bold text-sm">
+                        EP
                       </div>
-                      <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full font-bold">
-                        Ready
-                      </span>
+                      <div className="text-xs space-y-1">
+                        <p className="font-bold text-black">Telenor Microfinance Bank</p>
+                        <p className="text-neutral-600">
+                          Approve payment via EasyPaisa 1-tap USSD prompt or in-app push notification on your device.
+                        </p>
+                        <p className="text-[11px] font-mono text-[#00A551] font-bold">
+                          Converted Total: {formatPKR(pkrTotal)}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      {/* Official Apple Pay Button */}
-                      <button
-                        type="button"
-                        onClick={() => setShowApplePaySheet(true)}
-                        className="w-full py-3.5 rounded-full font-semibold text-white bg-black hover:bg-neutral-800 shadow-md text-sm transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <span className="text-base"></span>
-                        <span>Pay with Apple Pay ({formatPrice(finalTotal)})</span>
-                      </button>
-                      <p className="text-[11px] text-center text-neutral-400">
-                        Click to activate the simulated iOS Touch ID / Face ID payment sheet.
-                      </p>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                        EasyPaisa Account Number (03XX-XXXXXXX)
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="0345 7654321"
+                        value={easyMobile}
+                        onChange={(e) => setEasyMobile(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-[#F8F9FA] border border-neutral-200 rounded-xl text-sm font-mono text-black outline-none focus:ring-2 focus:ring-[#00A551]/20 focus:border-[#00A551]"
+                      />
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowEasyModal(true)}
+                      className="w-full py-3.5 rounded-full font-bold text-white bg-[#00A551] hover:bg-[#008f46] shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Zap className="w-4 h-4 text-white" />
+                      <span>Authorize {formatPKR(pkrTotal)} with EasyPaisa</span>
+                    </button>
                   </div>
                 )}
               </div>
 
-              {/* Option 5: GOOGLE PAY */}
-              <div
-                onClick={() => setPaymentMethod("googlepay")}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "googlepay"
-                    ? "border-black bg-neutral-50/60 ring-1 ring-black shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/30"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentMethod === "googlepay"}
-                      onChange={() => setPaymentMethod("googlepay")}
-                      className="w-4 h-4 text-black accent-black cursor-pointer"
-                    />
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-black">Google Pay</span>
-                      <span className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        Google Protected
-                      </span>
-                    </div>
-                  </div>
-                  {/* Google Pay Badge */}
-                  <div className="h-7 px-2.5 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Google Pay">
-                    <svg className="h-3.5 w-auto" viewBox="0 0 38 16" fill="none">
-                      <path d="M7.7 8.1V6.3H4V9.8H6.2C5.9 10.9 4.9 11.6 3.8 11.4C2.5 11.2 1.6 10 1.6 8.7C1.6 7.4 2.5 6.2 3.8 6C4.4 5.9 5.1 6.1 5.6 6.5L6.9 5.2C6 4.4 4.8 4 3.6 4.1C1.6 4.3 0 6 0 8C0 10.2 1.8 12 4 12C6.1 12 7.7 10.4 7.7 8.1Z" fill="#4285F4"/>
-                      <path d="M12.8 5.5H10.5V12H11.8V9.8H12.8C14.3 9.8 15.5 8.9 15.5 7.6C15.5 6.3 14.3 5.5 12.8 5.5ZM12.7 8.6H11.8V6.6H12.7C13.6 6.6 14.2 7 14.2 7.6C14.2 8.2 13.6 8.6 12.7 8.6ZM19.2 12V7.7H18V8.5C17.7 7.9 17 7.5 16.3 7.5C15.1 7.5 14.2 8.5 14.2 9.8C14.2 11.1 15.1 12.1 16.3 12.1C17 12.1 17.7 11.7 18 11.1V12H19.2ZM16.7 11.1C15.9 11.1 15.4 10.5 15.4 9.8C15.4 9.1 15.9 8.5 16.7 8.5C17.5 8.5 18 9.1 18 9.8C18 10.5 17.5 11.1 16.7 11.1ZM20.7 14.1C22 14.1 22.8 13.5 23.3 12.3L25.5 7.7H24.1L22.7 11.1L21.3 7.7H19.9L21.8 11.9L21.4 13C21.1 13.3 20.8 13.4 20.6 13.4C20.4 13.4 20.2 13.4 20 13.3L19.9 14C20.1 14.1 20.4 14.1 20.7 14.1Z" fill="#5F6368"/>
-                    </svg>
-                  </div>
-                </div>
-
-                {paymentMethod === "googlepay" && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in duration-200">
-                    <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-white border border-neutral-200 flex items-center justify-center font-bold text-xs shadow-xs">
-                          <span className="text-blue-600">G</span>
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-black">Google Wallet Card (•••• 9924)</p>
-                          <p className="text-[11px] text-neutral-500">{formData.email || "customer@gmail.com"}</p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
-                        Linked
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {/* Official Google Pay Button */}
-                      <button
-                        type="button"
-                        onClick={() => setShowGooglePaySheet(true)}
-                        className="w-full py-3.5 rounded-full font-semibold text-black bg-white hover:bg-neutral-50 border border-neutral-300 shadow-sm text-sm transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <span className="text-xs font-bold text-neutral-500">Buy with</span>
-                        <svg className="h-4 w-auto" viewBox="0 0 38 16" fill="none">
-                          <path d="M7.7 8.1V6.3H4V9.8H6.2C5.9 10.9 4.9 11.6 3.8 11.4C2.5 11.2 1.6 10 1.6 8.7C1.6 7.4 2.5 6.2 3.8 6C4.4 5.9 5.1 6.1 5.6 6.5L6.9 5.2C6 4.4 4.8 4 3.6 4.1C1.6 4.3 0 6 0 8C0 10.2 1.8 12 4 12C6.1 12 7.7 10.4 7.7 8.1Z" fill="#4285F4"/>
-                          <path d="M12.8 5.5H10.5V12H11.8V9.8H12.8C14.3 9.8 15.5 8.9 15.5 7.6C15.5 6.3 14.3 5.5 12.8 5.5ZM12.7 8.6H11.8V6.6H12.7C13.6 6.6 14.2 7 14.2 7.6C14.2 8.2 13.6 8.6 12.7 8.6ZM19.2 12V7.7H18V8.5C17.7 7.9 17 7.5 16.3 7.5C15.1 7.5 14.2 8.5 14.2 9.8C14.2 11.1 15.1 12.1 16.3 12.1C17 12.1 17.7 11.7 18 11.1V12H19.2ZM16.7 11.1C15.9 11.1 15.4 10.5 15.4 9.8C15.4 9.1 15.9 8.5 16.7 8.5C17.5 8.5 18 9.1 18 9.8C18 10.5 17.5 11.1 16.7 11.1ZM20.7 14.1C22 14.1 22.8 13.5 23.3 12.3L25.5 7.7H24.1L22.7 11.1L21.3 7.7H19.9L21.8 11.9L21.4 13C21.1 13.3 20.8 13.4 20.6 13.4C20.4 13.4 20.2 13.4 20 13.3L19.9 14C20.1 14.1 20.4 14.1 20.7 14.1Z" fill="#5F6368"/>
-                        </svg>
-                        <span>({formatPrice(finalTotal)})</span>
-                      </button>
-                      <p className="text-[11px] text-center text-neutral-400">
-                        Click to activate the simulated Google Pay 1-tap confirmation sheet.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
-          <div className="p-6 rounded-3xl border border-neutral-200 bg-[#F2F0F1] space-y-2">
-            <div className="flex items-center gap-2 text-black">
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <h3 className="font-bold text-sm">DevOps Verified Checkout</h3>
+          {/* SBP Security Seal */}
+          <div className="p-6 rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/80 space-y-2">
+            <div className="flex items-center gap-2 text-emerald-900">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+              <h3 className="font-bold text-sm">State Bank of Pakistan (SBP) &amp; 1LINK Certified</h3>
             </div>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              This application seamlessly simulates order transactions for testing and portfolio presentation without requiring real credit cards or external credentials.
+              All transactions in this simulation are encrypted using 256-bit SSL and comply with Pakistan National Payment System regulations for SadaPay, NayaPay, PayPak, JazzCash, and EasyPaisa.
             </p>
           </div>
         </div>
 
-        {/* Right Column: Order Summary */}
-        <div className="lg:col-span-5 p-6 sm:p-8 rounded-3xl border border-neutral-200 bg-white space-y-6">
+        {/* Right Column: Order Summary with PKR conversion */}
+        <div className="lg:col-span-5 p-6 sm:p-8 rounded-3xl border border-neutral-200 bg-white space-y-6 shadow-xs">
           <div className="flex items-center gap-2 pb-3 border-b border-neutral-200">
             <ShoppingBag className="w-4 h-4 text-black" />
             <h2 className="font-bold text-base text-black">Order Summary ({items.length} items)</h2>
@@ -1074,23 +1282,31 @@ export default function CheckoutPage() {
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-neutral-600">
-                <span>Discount (-20%)</span>
-                <span className="font-semibold text-rose-500">-{formatPrice(discount)}</span>
+                <span className="text-emerald-700 font-semibold">Special Discount (-20%)</span>
+                <span className="font-bold text-emerald-700">-{formatPrice(discount)}</span>
               </div>
             )}
             <div className="flex justify-between text-neutral-600">
-              <span>Delivery Fee</span>
+              <span>Delivery Fee (Pakistan-wide)</span>
               <span className="font-semibold text-black">
                 {shipping === 0 ? "FREE" : formatPrice(shipping)}
               </span>
             </div>
             <div className="flex justify-between text-neutral-600">
-              <span>Estimated Tax</span>
+              <span>Sales Tax (FBR 17% simulated)</span>
               <span className="font-semibold text-black">{formatPrice(tax)}</span>
             </div>
-            <div className="pt-3 border-t border-neutral-200 flex justify-between font-bold text-base text-black">
-              <span>Total Due</span>
-              <span className="text-xl font-extrabold text-black">{formatPrice(finalTotal)}</span>
+
+            {/* Total in USD and PKR */}
+            <div className="pt-3 border-t border-neutral-200 space-y-1">
+              <div className="flex justify-between font-bold text-base text-black">
+                <span>Total Due (USD)</span>
+                <span className="text-xl font-extrabold text-black">{formatPrice(finalTotal)}</span>
+              </div>
+              <div className="flex justify-between items-center px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200">
+                <span className="text-xs font-bold text-emerald-900">Total in Pakistani Rupees</span>
+                <span className="text-base font-extrabold text-emerald-800">{formatPKR(pkrTotal)}</span>
+              </div>
             </div>
           </div>
 
@@ -1098,154 +1314,121 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full inline-flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-white bg-black hover:bg-neutral-800 shadow-md text-sm transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-2 py-4 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Processing Order...</span>
+                <span>Processing Transaction...</span>
               </span>
-            ) : paymentMethod === "visa" ? (
-              `Pay with Visa (${formatPrice(finalTotal)})`
-            ) : paymentMethod === "mastercard" ? (
-              `Pay with Mastercard (${formatPrice(finalTotal)})`
-            ) : paymentMethod === "paypal" ? (
-              `Open PayPal Checkout (${formatPrice(finalTotal)})`
-            ) : paymentMethod === "applepay" ? (
-              `Pay with Pay (${formatPrice(finalTotal)})`
+            ) : paymentMethod === "sadapay" ? (
+              `Pay ${formatPrice(finalTotal)} (${formatPKR(pkrTotal)}) with SadaPay`
+            ) : paymentMethod === "nayapay" ? (
+              `Pay ${formatPrice(finalTotal)} (${formatPKR(pkrTotal)}) with NayaPay`
+            ) : paymentMethod === "paypak" ? (
+              `Pay ${formatPrice(finalTotal)} (${formatPKR(pkrTotal)}) with PayPak`
+            ) : paymentMethod === "jazzcash" ? (
+              `Open JazzCash Portal (${formatPKR(pkrTotal)})`
             ) : (
-              `Pay with Google Pay (${formatPrice(finalTotal)})`
+              `Open EasyPaisa Portal (${formatPKR(pkrTotal)})`
             )}
           </button>
         </div>
       </form>
 
       {/* ========================================================= */}
-      {/* 1. PAYPAL CHECKOUT SANDBOX MODAL */}
+      {/* 1. JAZZCASH AUTHENTIC SIMULATION MODAL */}
       {/* ========================================================= */}
-      {showPayPalModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* PayPal Header */}
-            <div className="bg-[#003087] px-6 py-4 flex items-center justify-between text-white">
+      {showJazzModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-[#EC1C24] p-5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#003087] font-bold text-sm">
-                  P
+                <div className="w-8 h-8 rounded-lg bg-white text-[#EC1C24] font-black text-sm flex items-center justify-center shadow-xs">
+                  JC
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm leading-tight">PayPal Checkout</h3>
-                  <p className="text-[10px] text-blue-200 flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-emerald-300" />
-                    <span>Sandbox Sandbox Mode • 256-Bit SSL</span>
-                  </p>
+                  <h3 className="font-bold text-sm">JazzCash Mobile Payment</h3>
+                  <p className="text-[10px] text-red-100">State Bank of Pakistan Approved Gateway</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowPayPalModal(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
+                onClick={() => setShowJazzModal(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* Body */}
             <div className="p-6 space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-                <div>
-                  <p className="text-xs text-neutral-500">Merchant</p>
-                  <p className="font-bold text-sm text-black">ShopFlow Fashion Global</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-neutral-500">Total Due</p>
-                  <p className="font-extrabold text-lg text-[#003087]">{formatPrice(finalTotal)}</p>
-                </div>
+              <div className="p-4 rounded-2xl bg-red-50/70 border border-red-200/80 text-center space-y-1">
+                <p className="text-xs text-neutral-500 font-semibold uppercase">Total Amount</p>
+                <p className="text-2xl font-black text-[#EC1C24]">{formatPKR(pkrTotal)}</p>
+                <p className="text-[11px] text-neutral-500">ShopFlow Fashion Global • {formatPrice(finalTotal)} USD</p>
               </div>
 
-              {/* Funding Source Selector */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-neutral-700">Select Funding Source</p>
-                <div className="space-y-2">
-                  <label
-                    onClick={() => setPayPalFundingSource("balance")}
-                    className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
-                      payPalFundingSource === "balance"
-                        ? "border-[#003087] bg-blue-50/40 ring-1 ring-[#003087]"
-                        : "border-neutral-200 hover:border-neutral-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        checked={payPalFundingSource === "balance"}
-                        onChange={() => setPayPalFundingSource("balance")}
-                        className="text-[#003087] accent-[#003087]"
-                      />
-                      <div>
-                        <p className="text-xs font-semibold text-black">PayPal Balance ($3,450.00)</p>
-                        <p className="text-[11px] text-neutral-500">Instant transfer • Preferred</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold">Recommended</span>
-                  </label>
-
-                  <label
-                    onClick={() => setPayPalFundingSource("bank")}
-                    className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
-                      payPalFundingSource === "bank"
-                        ? "border-[#003087] bg-blue-50/40 ring-1 ring-[#003087]"
-                        : "border-neutral-200 hover:border-neutral-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        checked={payPalFundingSource === "bank"}
-                        onChange={() => setPayPalFundingSource("bank")}
-                        className="text-[#003087] accent-[#003087]"
-                      />
-                      <div>
-                        <p className="text-xs font-semibold text-black">Chase Premier Checking (•••• 8192)</p>
-                        <p className="text-[11px] text-neutral-500">Backup payment method</p>
-                      </div>
-                    </div>
-                  </label>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between py-2 border-b border-neutral-100">
+                  <span className="text-neutral-500">JazzCash Account</span>
+                  <span className="font-bold text-black font-mono">{jazzMobile}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-neutral-100">
+                  <span className="text-neutral-500">Customer CNIC</span>
+                  <span className="font-bold text-black font-mono">{jazzCnic}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-neutral-100">
+                  <span className="text-neutral-500">Delivery To</span>
+                  <span className="font-semibold text-black">{formData.city}, Pakistan</span>
                 </div>
               </div>
 
-              {/* Delivery Destination */}
-              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1">
-                <span className="text-[10px] text-neutral-500 font-semibold uppercase">Ship To:</span>
-                <p className="font-semibold text-black">{formData.fullName}</p>
-                <p className="text-neutral-600">{formData.address}, {formData.city}, {formData.postalCode}</p>
+              <div className="space-y-2 pt-1">
+                <label className="block text-xs font-bold text-neutral-700">
+                  Enter 4-Digit JazzCash MPIN
+                </label>
+                <input
+                  type="password"
+                  maxLength={4}
+                  placeholder="••••"
+                  value={jazzMpin}
+                  onChange={(e) => setJazzMpin(e.target.value.replace(/\D/g, ""))}
+                  className="w-full text-center tracking-[0.5em] text-xl font-mono py-3 bg-[#F8F9FA] border border-neutral-300 rounded-2xl outline-none focus:ring-2 focus:ring-[#EC1C24]/30 focus:border-[#EC1C24]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setJazzMpin("1234")}
+                  className="text-[11px] text-[#EC1C24] font-semibold hover:underline block text-center cursor-pointer"
+                >
+                  Quick-fill Demo MPIN (1234)
+                </button>
               </div>
 
-              {/* Action Buttons */}
               <div className="space-y-2 pt-2">
                 <button
                   type="button"
-                  onClick={handleApprovePayPal}
-                  disabled={payPalProcessing}
-                  className="w-full py-3.5 rounded-full font-bold text-white bg-[#0070BA] hover:bg-[#005ea6] shadow-md text-sm transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  onClick={handleApproveJazz}
+                  disabled={jazzProcessing}
+                  className="w-full py-4 rounded-full font-bold text-white bg-[#EC1C24] hover:bg-[#cf151c] shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {payPalProcessing ? (
+                  {jazzProcessing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Authorizing PayPal Payment...</span>
+                      <span>Verifying with Jazz Network...</span>
                     </>
                   ) : (
-                    <>
-                      <span>Complete Purchase ({formatPrice(finalTotal)})</span>
-                    </>
+                    <span>Confirm &amp; Pay {formatPKR(pkrTotal)}</span>
                   )}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setShowPayPalModal(false)}
-                  className="w-full py-2.5 text-xs text-neutral-500 hover:text-black transition-colors"
+                  onClick={() => setShowJazzModal(false)}
+                  className="w-full py-2 text-xs text-neutral-500 hover:text-black transition-colors"
                 >
-                  Cancel and return to ShopFlow
+                  Cancel and return
                 </button>
               </div>
             </div>
@@ -1254,202 +1437,95 @@ export default function CheckoutPage() {
       )}
 
       {/* ========================================================= */}
-      {/* 2. APPLE PAY INTERACTIVE BIOMETRIC SHEET */}
+      {/* 2. EASYPAISA AUTHENTIC SIMULATION MODAL */}
       {/* ========================================================= */}
-      {showApplePaySheet && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-[#1C1C1E] text-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-white/10 overflow-hidden animate-in slide-in-from-bottom duration-300">
-            {/* Sheet Handle */}
-            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 sm:hidden" />
-
-            <div className="p-6 space-y-6">
-              {/* Apple Pay Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-semibold">Pay</span>
-                  <span className="text-xs text-neutral-400">ShopFlow</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowApplePaySheet(false)}
-                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer text-neutral-300"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Card Thumbnail */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 border border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-8 rounded-lg bg-gradient-to-tr from-neutral-300 to-white text-black font-semibold text-[9px] flex items-center justify-center shadow-inner">
-                    Card
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-white">Apple Card</p>
-                    <p className="text-[11px] text-neutral-400">Mastercard (•••• 4021)</p>
-                  </div>
-                </div>
-                <span className="text-xs font-mono font-bold text-white">{formatPrice(finalTotal)}</span>
-              </div>
-
-              {/* Contact & Shipping Details */}
-              <div className="space-y-2 text-xs divide-y divide-white/10">
-                <div className="flex justify-between py-1.5 text-neutral-400">
-                  <span>Contact</span>
-                  <span className="text-white font-medium">{formData.email}</span>
-                </div>
-                <div className="flex justify-between py-1.5 text-neutral-400">
-                  <span>Shipping</span>
-                  <span className="text-white font-medium truncate max-w-[220px]">
-                    {formData.address}, {formData.city}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1.5 text-neutral-400">
-                  <span>Subtotal + Tax</span>
-                  <span className="text-white font-medium">{formatPrice(finalTotal)}</span>
-                </div>
-              </div>
-
-              {/* Interactive Biometric Trigger */}
-              <div className="pt-2 text-center space-y-4">
-                <button
-                  type="button"
-                  onClick={handleTriggerApplePayBiometric}
-                  disabled={applePayBiometricActive || applePayDone}
-                  className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                    applePayDone
-                      ? "bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/30"
-                      : applePayBiometricActive
-                      ? "bg-blue-600 text-white animate-pulse ring-4 ring-blue-400/40"
-                      : "bg-white/10 text-white hover:bg-white/20 active:scale-95"
-                  }`}
-                >
-                  {applePayDone ? (
-                    <Check className="w-10 h-10 animate-in zoom-in-75 duration-200" />
-                  ) : (
-                    <Fingerprint className="w-10 h-10" />
-                  )}
-                </button>
-
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-white">
-                    {applePayDone
-                      ? "Payment Verified!"
-                      : applePayBiometricActive
-                      ? "Verifying Biometric Touch / Face ID..."
-                      : "Tap Sensor or Click Below to Pay"}
-                  </p>
-                  <p className="text-[11px] text-neutral-400">
-                    Double-click side button or touch sensor to approve
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleTriggerApplePayBiometric}
-                  disabled={applePayBiometricActive || applePayDone}
-                  className="w-full py-3.5 rounded-full font-semibold text-black bg-white hover:bg-neutral-100 shadow-md text-sm transition-all cursor-pointer"
-                >
-                  Confirm with Apple Pay ({formatPrice(finalTotal)})
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 3. GOOGLE PAY PAYMENT SHEET MODAL */}
-      {/* ========================================================= */}
-      {showGooglePaySheet && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+      {showEasyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Google Pay Header */}
-            <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <svg className="h-5 w-auto" viewBox="0 0 38 16" fill="none">
-                  <path d="M7.7 8.1V6.3H4V9.8H6.2C5.9 10.9 4.9 11.6 3.8 11.4C2.5 11.2 1.6 10 1.6 8.7C1.6 7.4 2.5 6.2 3.8 6C4.4 5.9 5.1 6.1 5.6 6.5L6.9 5.2C6 4.4 4.8 4 3.6 4.1C1.6 4.3 0 6 0 8C0 10.2 1.8 12 4 12C6.1 12 7.7 10.4 7.7 8.1Z" fill="#4285F4"/>
-                  <path d="M12.8 5.5H10.5V12H11.8V9.8H12.8C14.3 9.8 15.5 8.9 15.5 7.6C15.5 6.3 14.3 5.5 12.8 5.5ZM12.7 8.6H11.8V6.6H12.7C13.6 6.6 14.2 7 14.2 7.6C14.2 8.2 13.6 8.6 12.7 8.6ZM19.2 12V7.7H18V8.5C17.7 7.9 17 7.5 16.3 7.5C15.1 7.5 14.2 8.5 14.2 9.8C14.2 11.1 15.1 12.1 16.3 12.1C17 12.1 17.7 11.7 18 11.1V12H19.2ZM16.7 11.1C15.9 11.1 15.4 10.5 15.4 9.8C15.4 9.1 15.9 8.5 16.7 8.5C17.5 8.5 18 9.1 18 9.8C18 10.5 17.5 11.1 16.7 11.1ZM20.7 14.1C22 14.1 22.8 13.5 23.3 12.3L25.5 7.7H24.1L22.7 11.1L21.3 7.7H19.9L21.8 11.9L21.4 13C21.1 13.3 20.8 13.4 20.6 13.4C20.4 13.4 20.2 13.4 20 13.3L19.9 14C20.1 14.1 20.4 14.1 20.7 14.1Z" fill="#5F6368"/>
-                </svg>
-                <span className="text-xs text-neutral-400">• ShopFlow Store</span>
+            {/* Header */}
+            <div className="bg-[#00A551] p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white text-[#00A551] font-black text-sm flex items-center justify-center shadow-xs">
+                  EP
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">EasyPaisa Telenor Wallet</h3>
+                  <p className="text-[10px] text-emerald-100">1-Tap Instant USSD Checkout</p>
+                </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowGooglePaySheet(false)}
-                className="w-7 h-7 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-500 cursor-pointer"
+                onClick={() => setShowEasyModal(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Google Pay Body */}
+            {/* Body */}
             <div className="p-6 space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#1a73e8] text-white flex items-center justify-center font-bold text-sm">
-                    G
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-black">{formData.fullName}</p>
-                    <p className="text-[11px] text-neutral-500">{formData.email}</p>
-                  </div>
-                </div>
-                <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
-                  1-Tap Pay
-                </span>
+              <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-center space-y-1">
+                <p className="text-xs text-neutral-500 font-semibold uppercase">Payable Total</p>
+                <p className="text-2xl font-black text-[#00A551]">{formatPKR(pkrTotal)}</p>
+                <p className="text-[11px] text-neutral-500">ShopFlow Fashion Global • {formatPrice(finalTotal)} USD</p>
               </div>
 
-              {/* Linked Card */}
-              <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-7 rounded bg-neutral-800 text-white font-mono text-[9px] flex items-center justify-center">
-                    ••••
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-black">Google Pay Virtual Card (•••• 9924)</p>
-                    <p className="text-[11px] text-neutral-500">Fast checkout • No CVV required</p>
-                  </div>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between py-2 border-b border-neutral-100">
+                  <span className="text-neutral-500">EasyPaisa Mobile</span>
+                  <span className="font-bold text-black font-mono">{easyMobile}</span>
                 </div>
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <div className="flex justify-between py-2 border-b border-neutral-100">
+                  <span className="text-neutral-500">Merchant Account</span>
+                  <span className="font-bold text-black">ShopFlow Online Pakistan</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-neutral-100">
+                  <span className="text-neutral-500">Delivery Destination</span>
+                  <span className="font-semibold text-black">{formData.city}, Pakistan</span>
+                </div>
               </div>
 
-              {/* Delivery Address */}
-              <div className="p-3 bg-[#F9F9F9] rounded-xl text-xs space-y-0.5">
-                <p className="text-neutral-500 text-[10px] uppercase font-semibold">Deliver to</p>
-                <p className="font-semibold text-black">{formData.address}, {formData.city}</p>
-              </div>
-
-              {/* Total & Action */}
-              <div className="space-y-3 pt-2">
-                <div className="flex justify-between items-center text-sm font-bold text-black px-1">
-                  <span>Total Due</span>
-                  <span className="text-lg">{formatPrice(finalTotal)}</span>
-                </div>
-
+              <div className="space-y-2 pt-1">
+                <label className="block text-xs font-bold text-neutral-700">
+                  Enter 5-Digit EasyPaisa Secret PIN
+                </label>
+                <input
+                  type="password"
+                  maxLength={5}
+                  placeholder="•••••"
+                  value={easyPin}
+                  onChange={(e) => setEasyPin(e.target.value.replace(/\D/g, ""))}
+                  className="w-full text-center tracking-[0.5em] text-xl font-mono py-3 bg-[#F8F9FA] border border-neutral-300 rounded-2xl outline-none focus:ring-2 focus:ring-[#00A551]/30 focus:border-[#00A551]"
+                />
                 <button
                   type="button"
-                  onClick={handleApproveGooglePay}
-                  disabled={googlePayProcessing || googlePayDone}
-                  className="w-full py-4 rounded-full font-semibold text-white bg-[#1a73e8] hover:bg-[#1557b0] shadow-md text-sm transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  onClick={() => setEasyPin("55555")}
+                  className="text-[11px] text-[#00A551] font-semibold hover:underline block text-center cursor-pointer"
                 >
-                  {googlePayDone ? (
-                    <>
-                      <Check className="w-5 h-5" />
-                      <span>Google Pay Approved!</span>
-                    </>
-                  ) : googlePayProcessing ? (
+                  Quick-fill Demo PIN (55555)
+                </button>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleApproveEasy}
+                  disabled={easyProcessing}
+                  className="w-full py-4 rounded-full font-bold text-white bg-[#00A551] hover:bg-[#008f46] shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {easyProcessing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Authorizing with Google...</span>
+                      <span>Verifying with Telenor Bank...</span>
                     </>
                   ) : (
-                    <span>Pay {formatPrice(finalTotal)} with Google Pay</span>
+                    <span>Approve {formatPKR(pkrTotal)} Payment</span>
                   )}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setShowGooglePaySheet(false)}
+                  onClick={() => setShowEasyModal(false)}
                   className="w-full py-2 text-xs text-neutral-500 hover:text-black transition-colors"
                 >
                   Cancel and return
