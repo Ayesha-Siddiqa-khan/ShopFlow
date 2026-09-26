@@ -11,6 +11,7 @@ const MOCK_ORDERS = [
     date: "Sep 24, 2026",
     total: 240.00,
     status: "processing",
+    paymentMethod: "Visa (•••• 8892)",
     items: [
       { name: "SKINNY FIT JEANS", quantity: 1, price: 240.00 },
     ],
@@ -20,6 +21,7 @@ const MOCK_ORDERS = [
     date: "Sep 12, 2026",
     total: 300.0,
     status: "delivered",
+    paymentMethod: "Apple Pay",
     items: [
       { name: "T-SHIRT WITH TAPE DETAILS", quantity: 1, price: 120.0 },
       { name: "CHECKERED SHIRT", quantity: 1, price: 180.0 },
@@ -164,6 +166,9 @@ export default function AccountPage() {
                 <div>
                   <span className="text-xs text-neutral-400">Total</span>
                   <p className="font-extrabold text-black">{formatPrice(order.total)}</p>
+                  {order.paymentMethod && (
+                    <span className="text-[10px] text-neutral-500 font-medium block">{order.paymentMethod}</span>
+                  )}
                 </div>
                 <div>
                   <span
