@@ -1,16 +1,25 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-function LoginForm() {
-  const router = useRouter();
+function SearchParamsReader({ onParam }: { onParam: (param: string) => void }) {
   const searchParams = useSearchParams();
-  const redirectedFrom = searchParams.get("redirectedFrom") || "/account";
+  const redirectedFrom = searchParams.get("redirectedFrom");
+  useEffect(() => {
+    if (redirectedFrom) {
+      onParam(redirectedFrom);
+    }
+  }, [redirectedFrom, onParam]);
+  return null;
+}
 
+export default function LoginPage() {
+  const router = useRouter();
+  const [redirectedFrom, setRedirectedFrom] = useState("/account");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,7 +80,7 @@ function LoginForm() {
       setTimeout(() => {
         router.push(redirectedFrom);
         router.refresh();
-      }, 600);
+      }, 500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to sign in. Please try again.";
       setErrorMsg(msg);
@@ -81,6 +90,10 @@ function LoginForm() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-16 sm:py-24">
+      <Suspense fallback={null}>
+        <SearchParamsReader onParam={setRedirectedFrom} />
+      </Suspense>
+
       <div className="bg-white p-8 sm:p-10 rounded-[2rem] border border-neutral-200 shadow-xl space-y-6">
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center mx-auto text-white shadow-md">
@@ -160,13 +173,5 @@ function LoginForm() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="max-w-md mx-auto py-24 text-center text-xs text-neutral-400">Loading account portal...</div>}>
-      <LoginForm />
-    </Suspense>
   );
 }
