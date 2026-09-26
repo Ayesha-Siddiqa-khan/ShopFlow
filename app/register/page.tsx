@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, UserPlus } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -37,20 +37,25 @@ export default function RegisterPage() {
         localStorage.setItem("shopflow_user", JSON.stringify(userSession));
       } catch {}
 
-      try {
-        const supabase = createClient();
-        await supabase.auth.signUp({
-          email: cleanEmail,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              role: "customer",
-            },
-          },
-        });
-      } catch {
-        // Fallback to local session
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = createClient();
+          await Promise.race([
+            supabase.auth.signUp({
+              email: cleanEmail,
+              password,
+              options: {
+                data: {
+                  full_name: fullName,
+                  role: "customer",
+                },
+              },
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000)),
+          ]);
+        } catch {
+          // Fallback to local session
+        }
       }
 
       setSuccessMsg("Account registered successfully! Redirecting to your account...");

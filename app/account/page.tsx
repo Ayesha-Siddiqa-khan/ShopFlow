@@ -36,6 +36,7 @@ export default function AccountPage() {
     email: "customer@example.com",
     role: "customer",
   });
+  const [orders, setOrders] = useState(MOCK_ORDERS);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
@@ -49,6 +50,13 @@ export default function AccountPage() {
             email: parsed.email || "customer@example.com",
             role: parsed.role || "customer",
           });
+        }
+        const storedOrders = localStorage.getItem("shopflow_orders");
+        if (storedOrders) {
+          const parsedOrders = JSON.parse(storedOrders);
+          if (Array.isArray(parsedOrders) && parsedOrders.length > 0) {
+            setOrders([...parsedOrders, ...MOCK_ORDERS]);
+          }
         }
       } catch {
         // ignore
@@ -123,7 +131,7 @@ export default function AccountPage() {
           }`}
         >
           <Package className="w-4 h-4" />
-          <span>My Orders ({MOCK_ORDERS.length})</span>
+          <span>My Orders ({orders.length})</span>
         </button>
 
         <button
@@ -142,7 +150,7 @@ export default function AccountPage() {
       {/* Tab Content */}
       {activeTab === "orders" ? (
         <div className="space-y-4">
-          {MOCK_ORDERS.map((order) => (
+          {orders.map((order) => (
             <div
               key={order.id}
               className="p-6 rounded-3xl bg-white border border-neutral-200 shadow-sm space-y-4"

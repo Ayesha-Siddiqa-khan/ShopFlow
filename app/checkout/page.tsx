@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, ShieldCheck, ShoppingBag } from "lucide-react";
@@ -12,8 +12,8 @@ export default function CheckoutPage() {
   const { items, subtotal, tax, shipping, total, clearCart } = useCart();
 
   const [formData, setFormData] = useState({
-    fullName: "Alex Rivera",
-    email: "alex@example.com",
+    fullName: "Valued Customer",
+    email: "customer@example.com",
     address: "742 Evergreen Terrace",
     city: "San Francisco",
     state: "CA",
@@ -26,6 +26,26 @@ export default function CheckoutPage() {
 
   const discount = subtotal > 100 ? subtotal * 0.2 : 0;
   const finalTotal = total - discount;
+
+  // Prefill customer profile from session
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const stored = localStorage.getItem("shopflow_user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.email) {
+            setFormData((prev) => ({
+              ...prev,
+              email: parsed.email,
+              fullName: parsed.name || prev.fullName,
+            }));
+          }
+        }
+      } catch {}
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -40,7 +60,24 @@ export default function CheckoutPage() {
     try {
       // Simulate order placement
       const generatedId = "ORD-" + Math.random().toString(36).substring(2, 9).toUpperCase();
-      await new Promise((res) => setTimeout(res, 1000));
+      await new Promise((res) => setTimeout(res, 800));
+
+      const newOrder = {
+        id: generatedId,
+        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        total: finalTotal,
+        status: "processing",
+        items: items.map((item) => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price,
+        })),
+      };
+
+      try {
+        const existing = JSON.parse(localStorage.getItem("shopflow_orders") || "[]");
+        localStorage.setItem("shopflow_orders", JSON.stringify([newOrder, ...existing]));
+      } catch {}
 
       setOrderId(generatedId);
       clearCart();

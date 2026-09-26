@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Lock, CheckCircle2, AlertCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 function SearchParamsReader({ onParam }: { onParam: (param: string) => void }) {
   const searchParams = useSearchParams();
@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       setErrorMsg("Please enter both email and password.");
       return;
     }
@@ -37,7 +37,7 @@ export default function LoginPage() {
     setErrorMsg("");
 
     try {
-      // 1. Establish authenticated session
+      // 1. Establish authenticated session immediately
       const cleanEmail = email.trim();
       const userName = cleanEmail.split("@")[0].replace(/[._-]/g, " ");
       const formattedName = userName
@@ -55,7 +55,7 @@ export default function LoginPage() {
       // Set cookie for Next.js middleware and SSR
       const cookieValue = encodeURIComponent(JSON.stringify(userSession));
       document.cookie = `shopflow_user=${cookieValue}; path=/; max-age=2592000; SameSite=Lax`;
-      
+
       // Store in localStorage for client state hydration
       try {
         localStorage.setItem("shopflow_user", JSON.stringify(userSession));
@@ -63,15 +63,20 @@ export default function LoginPage() {
         // ignore localStorage errors
       }
 
-      // 2. Try Supabase if configured
-      try {
-        const supabase = createClient();
-        await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-      } catch {
-        // Fallback to local session
+      // 2. Only attempt Supabase network call if a real Supabase backend is configured
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = createClient();
+          await Promise.race([
+            supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password,
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000)),
+          ]);
+        } catch {
+          // Ignore network errors, local session is active
+        }
       }
 
       // 3. User feedback and smooth navigation
@@ -80,7 +85,7 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push(redirectedFrom);
         router.refresh();
-      }, 500);
+      }, 350);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to sign in. Please try again.";
       setErrorMsg(msg);
