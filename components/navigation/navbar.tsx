@@ -1,22 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { ShoppingCart, Search, User, Menu, X, ChevronDown, Sparkles, Shirt, Award, Flame, Dumbbell } from "lucide-react";
+import { ShoppingCart, Search, Menu, X, ChevronDown, Sparkles, Shirt, Award, Flame, Dumbbell } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 
 export function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { totalCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [shopDropdownOpen, setShopDropdownOpen] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Check user session
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const stored = localStorage.getItem("shopflow_user");
+        if (stored) {
+          setUser(JSON.parse(stored));
+        }
+      } catch {}
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,64 +59,90 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [searchQuery]);
 
+  const isHomeActive = pathname === "/";
+  const isShopActive = pathname.startsWith("/products");
+
   return (
     <div className="sticky top-0 z-50">
-      {/* Top Banner - standard and clean, always visible */}
-      <div className="bg-black text-white text-xs py-2.5">
+      {/* Top Banner */}
+      <div className="bg-black text-white text-xs py-2">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-center gap-2">
-          <span className="flex items-center gap-1.5 font-normal">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-            Sign up and get 20% off to your first order.
+          <span className="flex items-center gap-1.5 font-normal text-[11px] sm:text-xs">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            Sign up and get 20% off your first order.
           </span>
-          <Link href="/register" className="underline font-semibold hover:text-neutral-300 ml-1">
+          <Link href="/register" className="underline font-semibold hover:text-neutral-300 ml-1 text-[11px] sm:text-xs">
             Sign Up Now
           </Link>
         </div>
       </div>
 
-      {/* Main Navbar */}
+      {/* Main Header matching the requested design layout */}
       <header className="bg-white border-b border-neutral-100 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20 gap-4 lg:gap-10">
+          <div className="flex items-center justify-between h-20 gap-4">
             
-            {/* Mobile menu trigger + Logo */}
-            <div className="flex items-center gap-4">
+            {/* Left: Brand Logo with Arrow Icon */}
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-1 text-black"
+                className="lg:hidden p-1.5 text-black hover:bg-neutral-100 rounded-lg transition-colors"
                 aria-label="Toggle menu"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
 
-              <Link href="/" className="font-integral text-2xl sm:text-3xl text-black tracking-tighter">
-                SHOP.CO
+              <Link href="/" className="flex items-center gap-2.5 group">
+                {/* Geometric Arrow / Delta Mark matching the reference design */}
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-black text-white flex items-center justify-center shadow-xs transition-transform group-hover:scale-105">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3L2 20h20L12 3zm0 4.2l6.2 10.8H5.8L12 7.2z" />
+                  </svg>
+                </div>
+                <span className="font-integral text-xl sm:text-2xl text-black tracking-tight font-extrabold">
+                  SHOP.CO
+                </span>
               </Link>
             </div>
 
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-6 text-sm font-normal text-black whitespace-nowrap">
-              
-              {/* Interactive Shop Dropdown (Hovers and Opens) */}
+            {/* Center: Navigation Links in Clean Uppercase Design */}
+            <nav className="hidden lg:flex items-center gap-8 xl:gap-10 text-xs font-bold uppercase tracking-widest text-black">
+              {/* HOME Link */}
+              <Link
+                href="/"
+                className={`py-1 transition-colors relative ${
+                  isHomeActive
+                    ? "text-black font-extrabold after:content-[''] after:absolute after:-bottom-1.5 after:left-0 after:w-full after:h-[2px] after:bg-black"
+                    : "text-neutral-500 hover:text-black font-semibold"
+                }`}
+              >
+                HOME
+              </Link>
+
+              {/* SHOP Dropdown (Hovers and Opens) */}
               <div
                 ref={dropdownRef}
                 onMouseEnter={() => setShopDropdownOpen(true)}
                 onMouseLeave={() => setShopDropdownOpen(false)}
-                className="relative py-2"
+                className="relative py-1"
               >
                 <button
                   type="button"
                   onClick={() => setShopDropdownOpen(!shopDropdownOpen)}
-                  className="flex items-center gap-1 cursor-pointer font-medium text-black hover:text-neutral-600 focus:outline-none"
+                  className={`flex items-center gap-1 cursor-pointer transition-colors focus:outline-none uppercase ${
+                    isShopActive
+                      ? "text-black font-extrabold"
+                      : "text-neutral-500 hover:text-black font-semibold"
+                  }`}
                   aria-expanded={shopDropdownOpen}
                 >
-                  <span>Shop</span>
-                  <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform duration-200 ${shopDropdownOpen ? "rotate-180" : ""}`} />
+                  <span>SHOP</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-200 ${shopDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {/* Dropdown Menu Modal */}
                 {shopDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-200/80 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-200/80 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 normal-case">
                     <div className="space-y-1">
                       <Link
                         href="/products"
@@ -166,19 +208,42 @@ export function Navbar() {
                 )}
               </div>
 
-              <Link href="/products?category=casual" className="relative py-1 text-neutral-800 hover:text-black transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[2px] after:bg-black after:transition-all after:duration-200">
-                On Sale
+              {/* ON SALE */}
+              <Link
+                href="/products?category=casual"
+                className="py-1 text-neutral-500 hover:text-black font-semibold transition-colors"
+              >
+                ON SALE
               </Link>
-              <Link href="/products" className="relative py-1 text-neutral-800 hover:text-black transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[2px] after:bg-black after:transition-all after:duration-200">
-                New Arrivals
+
+              {/* NEW ARRIVALS */}
+              <Link
+                href="/products"
+                className="py-1 text-neutral-500 hover:text-black font-semibold transition-colors"
+              >
+                NEW ARRIVALS
               </Link>
-              <Link href="/products?category=formal" className="relative py-1 text-neutral-800 hover:text-black transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[2px] after:bg-black after:transition-all after:duration-200">
-                Brands
+
+              {/* BRANDS */}
+              <Link
+                href="/products?category=formal"
+                className="py-1 text-neutral-500 hover:text-black font-semibold transition-colors"
+              >
+                BRANDS
+              </Link>
+
+              {/* CONTACT */}
+              <Link
+                href="/account"
+                className="py-1 text-neutral-500 hover:text-black font-semibold transition-colors"
+              >
+                CONTACT
               </Link>
             </nav>
 
-            {/* Right Side Actions: Expandable Search + Cart + Account */}
-            <div className="flex items-center gap-2 sm:gap-4 text-black">
+            {/* Right: Actions matching design (Search + Cart + SIGN UP text link + LOG IN solid button) */}
+            <div className="flex items-center gap-3 sm:gap-5">
+              
               {/* Expandable Search Input (Touches or Hovers and Expands) */}
               <div
                 ref={searchContainerRef}
@@ -198,8 +263,8 @@ export function Navbar() {
                   }}
                   className={`flex items-center bg-[#f0f0f0] rounded-full transition-all duration-300 ease-in-out cursor-pointer ${
                     searchExpanded
-                      ? "w-60 sm:w-80 md:w-96 lg:w-[420px] px-3.5 py-2 ring-1 ring-black/20 shadow-sm"
-                      : "w-10 h-10 justify-center hover:bg-neutral-200 hover:scale-105"
+                      ? "w-48 sm:w-64 md:w-72 px-3 py-1.5 ring-1 ring-black/20 shadow-xs"
+                      : "w-9 h-9 justify-center hover:bg-neutral-200"
                   }`}
                 >
                   <button
@@ -207,7 +272,7 @@ export function Navbar() {
                     className="text-neutral-500 hover:text-black transition-colors shrink-0 p-0.5 focus:outline-none cursor-pointer"
                     aria-label="Search"
                   >
-                    <Search className="w-4.5 h-4.5" />
+                    <Search className="w-4 h-4" />
                   </button>
 
                   <input
@@ -225,10 +290,10 @@ export function Navbar() {
                         setSearchExpanded(false);
                       }
                     }}
-                    placeholder="Search for products..."
-                    className={`bg-transparent text-black text-sm outline-none transition-all duration-300 ${
+                    placeholder="Search products..."
+                    className={`bg-transparent text-black text-xs outline-none transition-all duration-300 ${
                       searchExpanded
-                        ? "ml-2.5 w-full opacity-100"
+                        ? "ml-2 w-full opacity-100"
                         : "w-0 p-0 ml-0 opacity-0 pointer-events-none"
                     }`}
                   />
@@ -244,43 +309,123 @@ export function Navbar() {
                       className="p-1 text-neutral-400 hover:text-black shrink-0 cursor-pointer"
                       aria-label="Clear search"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-3 h-3" />
                     </button>
                   )}
                 </form>
               </div>
 
-              {/* Cart Icon */}
-              <Link href="/cart" className="relative p-2 hover:opacity-90 hover:scale-110 active:scale-95 transition-all duration-200" aria-label="Shopping Cart">
+              {/* Shopping Cart Icon with Badge */}
+              <Link
+                href="/cart"
+                className="relative p-1.5 text-black hover:text-neutral-600 transition-colors"
+                aria-label="Shopping Cart"
+              >
                 <ShoppingCart className="w-5 h-5" />
                 {totalCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white shadow-xs animate-in zoom-in-75">
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] font-bold text-white shadow-xs animate-in zoom-in-75">
                     {totalCount}
                   </span>
                 )}
               </Link>
 
-              {/* Account Icon */}
-              <Link href="/account" className="p-2 hover:opacity-90 hover:scale-110 active:scale-95 transition-all duration-200" aria-label="Account">
-                <User className="w-5 h-5" />
-              </Link>
+              {/* Right Button Group: SIGN UP Text + LOG IN Solid Button */}
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/account"
+                    className="text-xs uppercase font-bold tracking-wider text-black hover:text-neutral-600 transition-colors hidden sm:inline-block"
+                  >
+                    {user.name?.split(" ")[0] || "MY ACCOUNT"}
+                  </Link>
+                  <Link
+                    href="/account"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-black text-white text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 transition-all shadow-xs flex items-center justify-center"
+                  >
+                    ACCOUNT
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/register"
+                    className="text-xs uppercase font-bold tracking-wider text-black hover:text-neutral-600 transition-colors hidden sm:inline-block"
+                  >
+                    SIGN UP
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-black text-white text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 transition-all shadow-xs flex items-center justify-center"
+                  >
+                    LOG IN
+                  </Link>
+                </div>
+              )}
+
             </div>
 
           </div>
         </div>
 
-        {/* Mobile Dropdown */}
+        {/* Mobile Dropdown Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-b border-neutral-200 bg-white px-6 py-6 space-y-4">
-            <nav className="flex flex-col space-y-4 text-base font-medium text-black">
-              <div className="font-bold text-xs uppercase tracking-wider text-neutral-400">Collections</div>
-              <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="pl-2">All Products</Link>
-              <Link href="/products?category=casual" onClick={() => setMobileMenuOpen(false)} className="pl-2">Casual</Link>
-              <Link href="/products?category=formal" onClick={() => setMobileMenuOpen(false)} className="pl-2">Formal</Link>
-              <Link href="/products?category=party" onClick={() => setMobileMenuOpen(false)} className="pl-2">Party</Link>
-              <Link href="/products?category=gym" onClick={() => setMobileMenuOpen(false)} className="pl-2">Gym</Link>
-              <div className="border-t border-neutral-100 pt-3">
-                <Link href="/cart" onClick={() => setMobileMenuOpen(false)}>My Cart ({totalCount})</Link>
+          <div className="lg:hidden border-b border-neutral-200 bg-white px-6 py-6 space-y-4 animate-in slide-in-from-top-2 duration-200">
+            <nav className="flex flex-col space-y-3 text-xs font-bold uppercase tracking-widest text-black">
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="py-1">
+                HOME
+              </Link>
+              <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="py-1">
+                SHOP
+              </Link>
+              <Link href="/products?category=casual" onClick={() => setMobileMenuOpen(false)} className="py-1">
+                ON SALE
+              </Link>
+              <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="py-1">
+                NEW ARRIVALS
+              </Link>
+              <Link href="/products?category=formal" onClick={() => setMobileMenuOpen(false)} className="py-1">
+                BRANDS
+              </Link>
+              <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="py-1">
+                CONTACT
+              </Link>
+
+              <div className="border-t border-neutral-200 pt-4 flex flex-col gap-2.5">
+                {user ? (
+                  <>
+                    <Link
+                      href="/account"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full py-2.5 text-center text-xs font-bold uppercase tracking-wider text-black border border-neutral-200 rounded-lg"
+                    >
+                      {user.name || "MY ACCOUNT"}
+                    </Link>
+                    <Link
+                      href="/account"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full py-2.5 text-center text-xs font-bold uppercase tracking-wider text-white bg-black rounded-lg"
+                    >
+                      VIEW ORDERS
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full py-2.5 text-center text-xs font-bold uppercase tracking-wider text-black border border-neutral-200 rounded-lg"
+                    >
+                      SIGN UP
+                    </Link>
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full py-2.5 text-center text-xs font-bold uppercase tracking-wider text-white bg-black rounded-lg"
+                    >
+                      LOG IN
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>
