@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { User, Package, LogOut, ShieldCheck, Check } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -29,11 +28,10 @@ const MOCK_ORDERS = [
 ];
 
 export default function AccountPage() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"orders" | "profile">("orders");
   const [currentUser, setCurrentUser] = useState({
-    name: "Customer",
-    email: "customer@example.com",
+    name: "Pro Editor",
+    email: "proeditorpakistanifeeling@gmail.com",
     role: "customer",
   });
   const [orders, setOrders] = useState(MOCK_ORDERS);
@@ -70,8 +68,7 @@ export default function AccountPage() {
     try {
       localStorage.removeItem("shopflow_user");
     } catch {}
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {

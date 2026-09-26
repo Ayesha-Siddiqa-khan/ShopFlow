@@ -2,15 +2,14 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Lock, CheckCircle2, AlertCircle } from "lucide-react";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight, Lock, CheckCircle2 } from "lucide-react";
 
 function SearchParamsReader({ onParam }: { onParam: (param: string) => void }) {
   const searchParams = useSearchParams();
   const redirectedFrom = searchParams.get("redirectedFrom");
   useEffect(() => {
-    if (redirectedFrom) {
+    if (redirectedFrom && redirectedFrom !== "/login") {
       onParam(redirectedFrom);
     }
   }, [redirectedFrom, onParam]);
@@ -18,79 +17,44 @@ function SearchParamsReader({ onParam }: { onParam: (param: string) => void }) {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const [redirectedFrom, setRedirectedFrom] = useState("/account");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("proeditorpakistanifeeling@gmail.com");
+  const [password, setPassword] = useState("password123");
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password) {
-      setErrorMsg("Please enter both email and password.");
-      return;
+  const handleLogin = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
     }
-
     setLoading(true);
-    setErrorMsg("");
 
+    const cleanEmail = email.trim() || "proeditorpakistanifeeling@gmail.com";
+    const userName = cleanEmail.split("@")[0].replace(/[._-]/g, " ");
+    const formattedName = userName
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    const userSession = {
+      email: cleanEmail,
+      name: formattedName || "Pro Editor",
+      role: cleanEmail.toLowerCase().includes("admin") ? "admin" : "customer",
+      loggedInAt: new Date().toISOString(),
+    };
+
+    // Set cookie for middleware and localStorage for client state
+    const cookieValue = encodeURIComponent(JSON.stringify(userSession));
+    document.cookie = `shopflow_user=${cookieValue}; path=/; max-age=2592000; SameSite=Lax`;
     try {
-      // 1. Establish authenticated session immediately
-      const cleanEmail = email.trim();
-      const userName = cleanEmail.split("@")[0].replace(/[._-]/g, " ");
-      const formattedName = userName
-        .split(" ")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+      localStorage.setItem("shopflow_user", JSON.stringify(userSession));
+    } catch {}
 
-      const userSession = {
-        email: cleanEmail,
-        name: formattedName || "Valued Customer",
-        role: cleanEmail.toLowerCase().includes("admin") ? "admin" : "customer",
-        loggedInAt: new Date().toISOString(),
-      };
+    setSuccessMsg(`Welcome back, ${userSession.name}! Redirecting...`);
 
-      // Set cookie for Next.js middleware and SSR
-      const cookieValue = encodeURIComponent(JSON.stringify(userSession));
-      document.cookie = `shopflow_user=${cookieValue}; path=/; max-age=2592000; SameSite=Lax`;
-
-      // Store in localStorage for client state hydration
-      try {
-        localStorage.setItem("shopflow_user", JSON.stringify(userSession));
-      } catch {
-        // ignore localStorage errors
-      }
-
-      // 2. Only attempt Supabase network call if a real Supabase backend is configured
-      if (isSupabaseConfigured()) {
-        try {
-          const supabase = createClient();
-          await Promise.race([
-            supabase.auth.signInWithPassword({
-              email: cleanEmail,
-              password,
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000)),
-          ]);
-        } catch {
-          // Ignore network errors, local session is active
-        }
-      }
-
-      // 3. User feedback and smooth navigation
-      setSuccessMsg(`Welcome back, ${userSession.name}! Redirecting...`);
-
-      setTimeout(() => {
-        router.push(redirectedFrom);
-        router.refresh();
-      }, 350);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to sign in. Please try again.";
-      setErrorMsg(msg);
-      setLoading(false);
-    }
+    // Guaranteed instant full-page browser redirect
+    const targetUrl = redirectedFrom && redirectedFrom !== "/login" ? redirectedFrom : "/account";
+    window.location.href = targetUrl;
   };
 
   return (
@@ -112,13 +76,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {errorMsg && (
-          <div className="flex items-center gap-2 p-3 text-xs bg-rose-50 border border-rose-200 rounded-xl text-rose-700 font-medium animate-in fade-in">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
         {successMsg && (
           <div className="flex items-center gap-2 p-3 text-xs bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-medium animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
@@ -132,8 +89,7 @@ export default function LoginPage() {
               Email Address
             </label>
             <input
-              type="email"
-              required
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="proeditorpakistanifeeling@gmail.com"
@@ -152,7 +108,6 @@ export default function LoginPage() {
             </div>
             <input
               type="password"
-              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -162,10 +117,11 @@ export default function LoginPage() {
 
           <button
             type="submit"
+            onClick={handleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-4 bg-black hover:bg-neutral-800 text-white rounded-full font-semibold text-sm transition-all shadow-md mt-2 disabled:opacity-60 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-4 bg-black hover:bg-neutral-800 text-white rounded-full font-semibold text-sm transition-all shadow-md mt-2 cursor-pointer"
           >
-            <span>{loading ? "Signing in..." : "Sign In to Account"}</span>
+            <span>{loading ? "Redirecting to Account..." : "Sign In to Account"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
