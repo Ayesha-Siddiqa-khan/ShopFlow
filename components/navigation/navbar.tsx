@@ -11,8 +11,12 @@ export function Navbar() {
   const { totalCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [shopDropdownOpen, setShopDropdownOpen] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,10 +33,15 @@ export function Navbar() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShopDropdownOpen(false);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        if (!searchQuery.trim()) {
+          setSearchExpanded(false);
+        }
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [searchQuery]);
 
   return (
     <div className="sticky top-0 z-50">
@@ -168,40 +177,91 @@ export function Navbar() {
               </Link>
             </nav>
 
-            {/* Search Bar matching SHOP.CO */}
-            <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xl relative items-center">
-              <button
-                type="submit"
-                className="absolute left-4 text-neutral-400 hover:text-black transition-colors focus:outline-none"
-                aria-label="Submit search"
+            {/* Right Side Actions: Expandable Search + Cart + Account */}
+            <div className="flex items-center gap-2 sm:gap-4 text-black">
+              {/* Expandable Search Input (Touches or Hovers and Expands) */}
+              <div
+                ref={searchContainerRef}
+                onMouseEnter={() => setSearchExpanded(true)}
+                onMouseLeave={() => {
+                  if (!isSearchFocused && !searchQuery.trim()) {
+                    setSearchExpanded(false);
+                  }
+                }}
+                className="relative flex items-center justify-end"
               >
-                <Search className="w-4 h-4" />
-              </button>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for products..."
-                className="w-full bg-[#f0f0f0] text-black text-sm rounded-full pl-11 pr-4 py-2.5 outline-none placeholder:text-neutral-400 focus:ring-1 focus:ring-black"
-              />
-            </form>
+                <form
+                  onSubmit={handleSearch}
+                  onClick={() => {
+                    setSearchExpanded(true);
+                    searchInputRef.current?.focus();
+                  }}
+                  className={`flex items-center bg-[#f0f0f0] rounded-full transition-all duration-300 ease-in-out cursor-pointer ${
+                    searchExpanded
+                      ? "w-60 sm:w-80 md:w-96 lg:w-[420px] px-3.5 py-2 ring-1 ring-black/20 shadow-sm"
+                      : "w-10 h-10 justify-center hover:bg-neutral-200"
+                  }`}
+                >
+                  <button
+                    type="submit"
+                    className="text-neutral-500 hover:text-black transition-colors shrink-0 p-0.5 focus:outline-none cursor-pointer"
+                    aria-label="Search"
+                  >
+                    <Search className="w-4.5 h-4.5" />
+                  </button>
 
-            {/* Action Icons */}
-            <div className="flex items-center gap-4 text-black">
-              <Link href="/products" className="sm:hidden p-1 text-black" aria-label="Search">
-                <Search className="w-5 h-5" />
-              </Link>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => {
+                      setIsSearchFocused(true);
+                      setSearchExpanded(true);
+                    }}
+                    onBlur={() => {
+                      setIsSearchFocused(false);
+                      if (!searchQuery.trim()) {
+                        setSearchExpanded(false);
+                      }
+                    }}
+                    placeholder="Search for products..."
+                    className={`bg-transparent text-black text-sm outline-none transition-all duration-300 ${
+                      searchExpanded
+                        ? "ml-2.5 w-full opacity-100"
+                        : "w-0 p-0 ml-0 opacity-0 pointer-events-none"
+                    }`}
+                  />
 
-              <Link href="/cart" className="relative p-1 hover:opacity-75 transition-opacity" aria-label="Shopping Cart">
+                  {searchExpanded && searchQuery && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSearchQuery("");
+                        searchInputRef.current?.focus();
+                      }}
+                      className="p-1 text-neutral-400 hover:text-black shrink-0 cursor-pointer"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </form>
+              </div>
+
+              {/* Cart Icon */}
+              <Link href="/cart" className="relative p-2 hover:opacity-75 transition-opacity" aria-label="Shopping Cart">
                 <ShoppingCart className="w-5 h-5" />
                 {totalCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
+                  <span className="absolute top-0.5 right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
                     {totalCount}
                   </span>
                 )}
               </Link>
 
-              <Link href="/account" className="p-1 hover:opacity-75 transition-opacity" aria-label="Account">
+              {/* Account Icon */}
+              <Link href="/account" className="p-2 hover:opacity-75 transition-opacity" aria-label="Account">
                 <User className="w-5 h-5" />
               </Link>
             </div>
