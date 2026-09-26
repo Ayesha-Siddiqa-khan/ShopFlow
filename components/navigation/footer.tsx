@@ -1,33 +1,11 @@
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { NewsletterCard } from "@/components/navigation/newsletter-card";
 
 export function Footer() {
   return (
     <footer className="shop-hero-bg text-neutral-600 relative mt-24">
       {/* Floating Newsletter Black Card from SHOP.CO */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -translate-y-1/2">
-        <div className="bg-black text-white rounded-[2rem] p-8 sm:p-12 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl">
-          <h2 className="font-integral text-2xl sm:text-4xl max-w-lg leading-tight">
-            STAY UP TO DATE ABOUT OUR LATEST OFFERS
-          </h2>
-          <div className="w-full sm:w-auto flex flex-col gap-3 max-w-sm">
-            <div className="relative">
-              <Mail className="w-5 h-5 text-neutral-400 absolute left-4 top-3.5" />
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                className="w-full bg-white text-black pl-12 pr-4 py-3 rounded-full text-sm outline-none placeholder:text-neutral-400"
-              />
-            </div>
-            <button
-              type="button"
-              className="w-full bg-white text-black font-semibold py-3 rounded-full text-sm hover:bg-neutral-200 transition-colors"
-            >
-              Subscribe to Newsletter
-            </button>
-          </div>
-        </div>
-      </div>
+      <NewsletterCard />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 -mt-10 sm:-mt-8">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-neutral-300">
@@ -104,13 +82,14 @@ export function Footer() {
           </div>
 
           {/* Links 1 */}
+          {/* Links 1 */}
           <div className="space-y-3">
             <h4 className="font-semibold text-xs text-black uppercase tracking-wider">Company</h4>
             <ul className="space-y-2.5 text-sm text-neutral-500">
-              <li><Link href="/" className="hover:text-black">About</Link></li>
-              <li><Link href="/" className="hover:text-black">Features</Link></li>
-              <li><Link href="/" className="hover:text-black">Works</Link></li>
-              <li><Link href="/" className="hover:text-black">Career</Link></li>
+              <li><Link href="/products" className="hover:text-black transition-colors">About</Link></li>
+              <li><Link href="/products?category=casual" className="hover:text-black transition-colors">Features</Link></li>
+              <li><Link href="/products?category=formal" className="hover:text-black transition-colors">Works</Link></li>
+              <li><Link href="/products" className="hover:text-black transition-colors">Career</Link></li>
             </ul>
           </div>
 
@@ -118,10 +97,10 @@ export function Footer() {
           <div className="space-y-3">
             <h4 className="font-semibold text-xs text-black uppercase tracking-wider">Help</h4>
             <ul className="space-y-2.5 text-sm text-neutral-500">
-              <li><Link href="/" className="hover:text-black">Customer Support</Link></li>
-              <li><Link href="/" className="hover:text-black">Delivery Details</Link></li>
-              <li><Link href="/" className="hover:text-black">Terms & Conditions</Link></li>
-              <li><Link href="/" className="hover:text-black">Privacy Policy</Link></li>
+              <li><Link href="/account" className="hover:text-black transition-colors">Customer Support</Link></li>
+              <li><Link href="/cart" className="hover:text-black transition-colors">Delivery Details</Link></li>
+              <li><Link href="/products" className="hover:text-black transition-colors">Terms &amp; Conditions</Link></li>
+              <li><Link href="/products" className="hover:text-black transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
 
@@ -129,13 +108,12 @@ export function Footer() {
           <div className="space-y-3">
             <h4 className="font-semibold text-xs text-black uppercase tracking-wider">FAQ</h4>
             <ul className="space-y-2.5 text-sm text-neutral-500">
-              <li><Link href="/" className="hover:text-black">Account</Link></li>
-              <li><Link href="/" className="hover:text-black">Manage Deliveries</Link></li>
-              <li><Link href="/" className="hover:text-black">Orders</Link></li>
-              <li><Link href="/" className="hover:text-black">Payments</Link></li>
+              <li><Link href="/account" className="hover:text-black transition-colors">Account</Link></li>
+              <li><Link href="/cart" className="hover:text-black transition-colors">Manage Deliveries</Link></li>
+              <li><Link href="/account" className="hover:text-black transition-colors">Orders</Link></li>
+              <li><Link href="/checkout" className="hover:text-black transition-colors">Payments</Link></li>
             </ul>
           </div>
-
         </div>
 
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">

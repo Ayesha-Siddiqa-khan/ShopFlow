@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Star, Sparkle } from "lucide-react";
+import { Sparkle } from "lucide-react";
 import { getProducts, getCategories } from "@/lib/db";
 import { ProductCard } from "@/components/products/product-card";
+import { CustomerReviews } from "@/components/home/customer-reviews";
 
 export default async function HomePage() {
   const [, products] = await Promise.all([
@@ -157,8 +158,9 @@ export default async function HomePage() {
             {/* Casual */}
             <Link
               href="/products?category=casual"
-              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group"
+              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/20 to-transparent z-1 pointer-events-none" />
               <h3 className="text-2xl font-bold text-black z-10 relative">Casual</h3>
               <Image
                 src="https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=800&auto=format&fit=crop&q=80"
@@ -172,8 +174,9 @@ export default async function HomePage() {
             {/* Formal */}
             <Link
               href="/products?category=formal"
-              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group"
+              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/20 to-transparent z-1 pointer-events-none" />
               <h3 className="text-2xl font-bold text-black z-10 relative">Formal</h3>
               <Image
                 src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1000&auto=format&fit=crop&q=80"
@@ -187,8 +190,9 @@ export default async function HomePage() {
             {/* Party */}
             <Link
               href="/products?category=party"
-              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group"
+              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/20 to-transparent z-1 pointer-events-none" />
               <h3 className="text-2xl font-bold text-black z-10 relative">Party</h3>
               <Image
                 src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=1000&auto=format&fit=crop&q=80"
@@ -202,8 +206,9 @@ export default async function HomePage() {
             {/* Gym */}
             <Link
               href="/products?category=gym"
-              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group"
+              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/20 to-transparent z-1 pointer-events-none" />
               <h3 className="text-2xl font-bold text-black z-10 relative">Gym</h3>
               <Image
                 src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80"
@@ -217,69 +222,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* OUR HAPPY CUSTOMERS Testimonial Carousel Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="font-integral text-2xl sm:text-4xl text-black">
-            OUR HAPPY CUSTOMERS
-          </h2>
-          <div className="flex gap-2">
-            <button className="p-2 border border-neutral-200 rounded-full hover:bg-neutral-100" aria-label="Previous">
-              <ArrowRight className="w-4 h-4 rotate-180" />
-            </button>
-            <button className="p-2 border border-neutral-200 rounded-full hover:bg-neutral-100" aria-label="Next">
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-3">
-            <div className="flex text-amber-400 gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-current" />
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5 font-bold text-black text-base">
-              <span>Sarah M.</span>
-              <span className="w-4 h-4 bg-emerald-500 rounded-full text-white flex items-center justify-center text-[10px]">✓</span>
-            </div>
-            <p className="text-sm text-neutral-600 leading-relaxed">
-              &quot;I am blown away by the quality and style of the clothes I received from SHOP.CO. From casual wear to elegant dresses, every piece I&apos;ve bought has exceeded my expectations.&quot;
-            </p>
-          </div>
-
-          <div className="border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-3">
-            <div className="flex text-amber-400 gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-current" />
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5 font-bold text-black text-base">
-              <span>Alex K.</span>
-              <span className="w-4 h-4 bg-emerald-500 rounded-full text-white flex items-center justify-center text-[10px]">✓</span>
-            </div>
-            <p className="text-sm text-neutral-600 leading-relaxed">
-              &quot;Finding clothes that align with my personal style used to be a challenge until I discovered SHOP.CO. The range of options they offer is truly remarkable.&quot;
-            </p>
-          </div>
-
-          <div className="border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-3">
-            <div className="flex text-amber-400 gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-current" />
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5 font-bold text-black text-base">
-              <span>James L.</span>
-              <span className="w-4 h-4 bg-emerald-500 rounded-full text-white flex items-center justify-center text-[10px]">✓</span>
-            </div>
-            <p className="text-sm text-neutral-600 leading-relaxed">
-              &quot;As someone who&apos;s always on the lookout for unique fashion pieces, I&apos;m thrilled to have stumbled upon SHOP.CO. The selection of clothes is not only diverse but also on-point with trends.&quot;
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* Interactive Customer Reviews Carousel */}
+      <CustomerReviews />
 
     </div>
   );

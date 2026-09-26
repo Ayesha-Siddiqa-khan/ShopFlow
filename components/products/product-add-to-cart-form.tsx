@@ -40,7 +40,7 @@ export function ProductAddToCartForm({ product }: ProductAddToCartFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isOutOfStock) return;
-    addToCart(product, quantity);
+    addToCart(product, quantity, selectedSize, selectedColor);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };
