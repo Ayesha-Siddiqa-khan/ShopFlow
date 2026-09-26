@@ -51,3 +51,6 @@ graphify-out/
 crash.log
 *.tfplan
 *.tfvars
+
+# playwright artifacts
+.playwright-mcp/
