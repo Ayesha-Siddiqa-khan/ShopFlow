@@ -1,15 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { ShoppingCart, Search, User, Menu, X, ChevronDown, Sparkles, Shirt, Award, Flame, Dumbbell } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 
 export function Navbar() {
+  const router = useRouter();
   const { totalCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [shopDropdownOpen, setShopDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push("/products");
+    }
+  };
 
   // Close dropdown if clicking outside
   useEffect(() => {
@@ -151,16 +163,22 @@ export function Navbar() {
             </nav>
 
             {/* Search Bar matching SHOP.CO */}
-            <div className="hidden sm:flex flex-1 max-w-xl relative items-center">
-              <div className="absolute left-4 text-neutral-400">
+            <form onSubmit={handleSearch} className="hidden sm:flex flex-1 max-w-xl relative items-center">
+              <button
+                type="submit"
+                className="absolute left-4 text-neutral-400 hover:text-black transition-colors focus:outline-none"
+                aria-label="Submit search"
+              >
                 <Search className="w-4 h-4" />
-              </div>
+              </button>
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for products..."
                 className="w-full bg-[#f0f0f0] text-black text-sm rounded-full pl-11 pr-4 py-2.5 outline-none placeholder:text-neutral-400 focus:ring-1 focus:ring-black"
               />
-            </div>
+            </form>
 
             {/* Action Icons */}
             <div className="flex items-center gap-4 text-black">

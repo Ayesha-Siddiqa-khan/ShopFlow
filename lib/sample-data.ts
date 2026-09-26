@@ -138,7 +138,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     description: "Hand-whiskered light wash stretch denim with subtle distressing along knees and pockets.",
     price: 210.00,
     stock_quantity: 40,
-    image_url: "https://images.unsplash.com/photo-1542272604-780c96856592?w=800&auto=format&fit=crop&q=80",
+    image_url: "https://images.unsplash.com/photo-1542272454315-4c01d7abdf4a?w=800&auto=format&fit=crop&q=80",
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
