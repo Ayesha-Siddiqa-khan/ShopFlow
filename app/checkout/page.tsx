@@ -322,7 +322,7 @@ export default function CheckoutPage() {
           SECURE CHECKOUT
         </h1>
         <p className="text-sm text-neutral-500 mt-1">
-          Complete your order using Visa, Mastercard, JazzCash, EasyPaisa, or PayPal.
+          Complete your order using Visa, Mastercard, JazzCash, or PayPal.
         </p>
       </div>
 
