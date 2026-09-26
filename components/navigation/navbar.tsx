@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { ShoppingCart, Search, Menu, X, ChevronDown, Sparkles, Shirt, Award, Flame, Dumbbell } from "lucide-react";
+import { ShoppingCart, Search, Menu, X, ChevronDown, Sparkles, Shirt, Award, Flame, Dumbbell, User } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 
 export function Navbar() {
@@ -329,22 +329,16 @@ export function Navbar() {
                 )}
               </Link>
 
-              {/* Right Button Group: SIGN UP Text + LOG IN Solid Button */}
+              {/* Right User State: Clean User Icon when logged in, or SIGN UP / LOG IN when logged out */}
               {user ? (
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/account"
-                    className="text-xs uppercase font-bold tracking-wider text-black hover:text-neutral-600 transition-colors hidden sm:inline-block"
-                  >
-                    {user.name?.split(" ")[0] || "MY ACCOUNT"}
-                  </Link>
-                  <Link
-                    href="/account"
-                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-black text-white text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 transition-all shadow-xs flex items-center justify-center"
-                  >
-                    ACCOUNT
-                  </Link>
-                </div>
+                <Link
+                  href="/account"
+                  className="p-2 text-black hover:opacity-80 hover:scale-110 active:scale-95 transition-all"
+                  aria-label="Account"
+                  title="My Account"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
               ) : (
                 <div className="flex items-center gap-3">
                   <Link

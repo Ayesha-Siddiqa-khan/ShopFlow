@@ -19,7 +19,7 @@ import {
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
 
-type PaymentMethodType = "visa" | "mastercard" | "jazzcash" | "easypaisa" | "paypal" | "cod";
+type PaymentMethodType = "visa" | "mastercard" | "jazzcash" | "paypal" | "cod";
 
 function createOrderId(): string {
   return "ORD-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(1000 + Math.random() * 9000);
@@ -61,16 +61,11 @@ export default function CheckoutPage() {
 
   const [isCvvFocused, setIsCvvFocused] = useState(false);
 
-  // JazzCash & EasyPaisa State
+  // JazzCash State (Pakistani Mobile Wallet)
   const [jazzMobile, setJazzMobile] = useState("0300 1234567");
   const [showJazzModal, setShowJazzModal] = useState(false);
   const [jazzMpin, setJazzMpin] = useState("");
   const [jazzProcessing, setJazzProcessing] = useState(false);
-
-  const [easyMobile, setEasyMobile] = useState("0345 7654321");
-  const [showEasyModal, setShowEasyModal] = useState(false);
-  const [easyPin, setEasyPin] = useState("");
-  const [easyProcessing, setEasyProcessing] = useState(false);
 
   // PayPal State
   const [showPayPalModal, setShowPayPalModal] = useState(false);
@@ -175,8 +170,6 @@ export default function CheckoutPage() {
       }
       case "jazzcash":
         return `JazzCash Wallet (${jazzMobile})`;
-      case "easypaisa":
-        return `EasyPaisa Wallet (${easyMobile})`;
       case "paypal":
         return `PayPal (${formData.email})`;
       case "cod":
@@ -228,10 +221,6 @@ export default function CheckoutPage() {
       setShowJazzModal(true);
       return;
     }
-    if (paymentMethod === "easypaisa") {
-      setShowEasyModal(true);
-      return;
-    }
     if (paymentMethod === "paypal") {
       setShowPayPalModal(true);
       return;
@@ -246,14 +235,6 @@ export default function CheckoutPage() {
     setJazzProcessing(false);
     setShowJazzModal(false);
     await finalizeOrder(`JazzCash Wallet (Account: ${jazzMobile} • Ref #${createRefId("JC")})`);
-  };
-
-  const handleApproveEasy = async () => {
-    setEasyProcessing(true);
-    await new Promise((r) => setTimeout(r, 1100));
-    setEasyProcessing(false);
-    setShowEasyModal(false);
-    await finalizeOrder(`EasyPaisa Wallet (Account: ${easyMobile} • TRX #${createRefId("EP")})`);
   };
 
   const handleApprovePayPal = async () => {
@@ -835,68 +816,8 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* Option 4: EASYPAISA */}
-              <div
-                onClick={() => setPaymentMethod("easypaisa")}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "easypaisa"
-                    ? "border-black bg-[#FAFAFA] ring-1 ring-black shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentMethod === "easypaisa"}
-                      onChange={() => setPaymentMethod("easypaisa")}
-                      className="w-4 h-4 text-black accent-black cursor-pointer"
-                    />
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-black">EasyPaisa</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-[#00A551] px-2 py-0.5 rounded-full">
-                        Pakistan 🇵🇰
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-7 px-2.5 bg-[#00A551] text-white rounded-md flex items-center justify-center shadow-xs font-bold text-xs tracking-tight" title="EasyPaisa">
-                    easypaisa
-                  </div>
-                </div>
 
-                {paymentMethod === "easypaisa" && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-3.5 animate-in fade-in duration-200">
-                    <p className="text-xs text-neutral-600">
-                      Authorize payment directly through your EasyPaisa mobile wallet account.
-                    </p>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                        EasyPaisa Account Number (03XX-XXXXXXX)
-                      </label>
-                      <input
-                        type="tel"
-                        placeholder="0345 7654321"
-                        value={easyMobile}
-                        onChange={(e) => setEasyMobile(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowEasyModal(true)}
-                      className="w-full py-3.5 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Zap className="w-3.5 h-3.5 text-white" />
-                      <span>Open EasyPaisa Portal ({formatPrice(finalTotal)})</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Option 5: PAYPAL */}
+              {/* Option 4: PAYPAL */}
               <div
                 onClick={() => setPaymentMethod("paypal")}
                 className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
@@ -940,7 +861,7 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* Option 6: Cash on Delivery (COD) */}
+              {/* Option 5: Cash on Delivery (COD) */}
               <div
                 onClick={() => setPaymentMethod("cod")}
                 className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
@@ -1059,8 +980,6 @@ export default function CheckoutPage() {
               `Pay with Mastercard (${formatPrice(finalTotal)})`
             ) : paymentMethod === "jazzcash" ? (
               `Pay with JazzCash (${formatPrice(finalTotal)})`
-            ) : paymentMethod === "easypaisa" ? (
-              `Pay with EasyPaisa (${formatPrice(finalTotal)})`
             ) : paymentMethod === "paypal" ? (
               `Pay with PayPal (${formatPrice(finalTotal)})`
             ) : (
@@ -1162,97 +1081,6 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* EasyPaisa Modal */}
-      {showEasyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="bg-[#00A551] p-5 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white text-[#00A551] font-black text-sm flex items-center justify-center shadow-xs">
-                  EP
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm">EasyPaisa Mobile Payment</h3>
-                  <p className="text-[10px] text-emerald-100">Simulated 1-Tap Authorization</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowEasyModal(false)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              <div className="p-3.5 bg-[#F0F0F0] rounded-2xl text-center space-y-1">
-                <p className="text-xs text-neutral-500 font-semibold uppercase text-[10px]">Total Amount</p>
-                <p className="text-xl font-black text-[#00A551]">₨ {pkrEquivalent.toLocaleString("en-PK")} PKR</p>
-                <p className="text-[11px] text-neutral-500">ShopFlow Store • {formatPrice(finalTotal)} USD</p>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-neutral-100">
-                  <span className="text-neutral-500">EasyPaisa Mobile</span>
-                  <span className="font-bold text-black font-mono">{easyMobile}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-neutral-100">
-                  <span className="text-neutral-500">Customer</span>
-                  <span className="font-semibold text-black">{formData.fullName}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-1">
-                <label className="block text-xs font-bold text-neutral-700">
-                  Enter 5-Digit EasyPaisa Secret PIN
-                </label>
-                <input
-                  type="password"
-                  maxLength={5}
-                  placeholder="•••••"
-                  value={easyPin}
-                  onChange={(e) => setEasyPin(e.target.value.replace(/\D/g, ""))}
-                  className="w-full text-center tracking-[0.5em] text-xl font-mono py-2.5 bg-[#F0F0F0] rounded-2xl outline-none focus:ring-1 focus:ring-black"
-                />
-                <button
-                  type="button"
-                  onClick={() => setEasyPin("55555")}
-                  className="text-[11px] text-[#00A551] font-semibold hover:underline block text-center cursor-pointer"
-                >
-                  Quick-fill Demo PIN (55555)
-                </button>
-              </div>
-
-              <div className="space-y-2 pt-2">
-                <button
-                  type="button"
-                  onClick={handleApproveEasy}
-                  disabled={easyProcessing}
-                  className="w-full py-3.5 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {easyProcessing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Authorizing with EasyPaisa...</span>
-                    </>
-                  ) : (
-                    <span>Approve Payment</span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowEasyModal(false)}
-                  className="w-full py-1.5 text-xs text-neutral-500 hover:text-black transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* PayPal Modal */}
       {showPayPalModal && (
