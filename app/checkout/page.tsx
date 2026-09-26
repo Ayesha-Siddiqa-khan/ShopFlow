@@ -10,20 +10,23 @@ import {
   ShoppingBag,
   Lock,
   Sparkles,
-  Fingerprint,
   RefreshCw,
   X,
   CreditCard,
   Truck,
-  Check,
+  Zap,
 } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
 
-type PaymentMethodType = "card" | "paypal" | "applepay" | "googlepay" | "cod";
+type PaymentMethodType = "visa" | "mastercard" | "jazzcash" | "easypaisa" | "paypal" | "cod";
 
 function createOrderId(): string {
   return "ORD-" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(1000 + Math.random() * 9000);
+}
+
+function createRefId(prefix: string): string {
+  return prefix + "-" + Math.floor(100000 + Math.random() * 900000);
 }
 
 export default function CheckoutPage() {
@@ -31,35 +34,47 @@ export default function CheckoutPage() {
   const { items, subtotal, tax, shipping, total, clearCart } = useCart();
 
   const [formData, setFormData] = useState({
-    fullName: "Valued Customer",
-    email: "customer@example.com",
+    fullName: "Pro Editor",
+    email: "proeditorpakistanifeeling@gmail.com",
+    phone: "0300 1234567",
     address: "742 Evergreen Terrace",
-    city: "San Francisco",
-    state: "CA",
-    postalCode: "94107",
+    city: "Islamabad",
+    postalCode: "44000",
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("card");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("visa");
 
-  // Virtual Card State (styled to match website's luxury black/white palette)
-  const [cardDetails, setCardDetails] = useState({
+  // Visa & Mastercard card details
+  const [visaDetails, setVisaDetails] = useState({
     number: "4532 8920 1204 8892",
     expiry: "12/28",
     cvc: "345",
-    name: "VALUED CUSTOMER",
+    name: "PRO EDITOR",
+  });
+
+  const [mcDetails, setMcDetails] = useState({
+    number: "5412 7534 8901 6621",
+    expiry: "08/29",
+    cvc: "789",
+    name: "PRO EDITOR",
   });
 
   const [isCvvFocused, setIsCvvFocused] = useState(false);
 
-  // Modals state for functional simulation
+  // JazzCash & EasyPaisa State
+  const [jazzMobile, setJazzMobile] = useState("0300 1234567");
+  const [showJazzModal, setShowJazzModal] = useState(false);
+  const [jazzMpin, setJazzMpin] = useState("");
+  const [jazzProcessing, setJazzProcessing] = useState(false);
+
+  const [easyMobile, setEasyMobile] = useState("0345 7654321");
+  const [showEasyModal, setShowEasyModal] = useState(false);
+  const [easyPin, setEasyPin] = useState("");
+  const [easyProcessing, setEasyProcessing] = useState(false);
+
+  // PayPal State
   const [showPayPalModal, setShowPayPalModal] = useState(false);
   const [payPalProcessing, setPayPalProcessing] = useState(false);
-  const [showApplePaySheet, setShowApplePaySheet] = useState(false);
-  const [applePayBiometricActive, setApplePayBiometricActive] = useState(false);
-  const [applePayDone, setApplePayDone] = useState(false);
-  const [showGooglePaySheet, setShowGooglePaySheet] = useState(false);
-  const [googlePayProcessing, setGooglePayProcessing] = useState(false);
-  const [googlePayDone, setGooglePayDone] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -68,6 +83,9 @@ export default function CheckoutPage() {
 
   const discount = subtotal > 100 ? subtotal * 0.2 : 0;
   const finalTotal = total - discount;
+
+  // Approximate PKR equivalent for reference: 1 USD ≈ 278 PKR
+  const pkrEquivalent = Math.round(finalTotal * 278.5);
 
   // Prefill customer profile from session
   useEffect(() => {
@@ -82,10 +100,9 @@ export default function CheckoutPage() {
               email: parsed.email,
               fullName: parsed.name || prev.fullName,
             }));
-            setCardDetails((prev) => ({
-              ...prev,
-              name: (parsed.name || prev.name).toUpperCase(),
-            }));
+            const upper = (parsed.name || "PRO EDITOR").toUpperCase();
+            setVisaDetails((prev) => ({ ...prev, name: upper }));
+            setMcDetails((prev) => ({ ...prev, name: upper }));
           }
         }
       } catch {}
@@ -97,57 +114,71 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+  const handleCardNumberChange = (val: string, type: "visa" | "mastercard") => {
+    const raw = val.replace(/\D/g, "").slice(0, 16);
     const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
-    setCardDetails((prev) => ({ ...prev, number: formatted }));
+    if (type === "visa") {
+      setVisaDetails((prev) => ({ ...prev, number: formatted }));
+    } else {
+      setMcDetails((prev) => ({ ...prev, number: formatted }));
+    }
   };
 
-  const handleCardExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+  const handleCardExpiryChange = (val: string, type: "visa" | "mastercard") => {
+    let raw = val.replace(/\D/g, "").slice(0, 4);
     if (raw.length > 2) {
       raw = `${raw.slice(0, 2)}/${raw.slice(2)}`;
     }
-    setCardDetails((prev) => ({ ...prev, expiry: raw }));
+    if (type === "visa") {
+      setVisaDetails((prev) => ({ ...prev, expiry: raw }));
+    } else {
+      setMcDetails((prev) => ({ ...prev, expiry: raw }));
+    }
   };
 
-  const handleCardCvcChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
-    setCardDetails((prev) => ({ ...prev, cvc: raw }));
+  const handleCardCvcChange = (val: string, type: "visa" | "mastercard") => {
+    const raw = val.replace(/\D/g, "").slice(0, 4);
+    if (type === "visa") {
+      setVisaDetails((prev) => ({ ...prev, cvc: raw }));
+    } else {
+      setMcDetails((prev) => ({ ...prev, cvc: raw }));
+    }
   };
 
   const fillDemoVisa = () => {
-    setCardDetails({
+    setVisaDetails({
       number: "4532 8920 1204 8892",
       expiry: "12/28",
       cvc: "345",
-      name: formData.fullName ? formData.fullName.toUpperCase() : "VALUED CUSTOMER",
+      name: formData.fullName ? formData.fullName.toUpperCase() : "PRO EDITOR",
     });
   };
 
   const fillDemoMastercard = () => {
-    setCardDetails({
+    setMcDetails({
       number: "5412 7534 8901 6621",
       expiry: "08/29",
       cvc: "789",
-      name: formData.fullName ? formData.fullName.toUpperCase() : "VALUED CUSTOMER",
+      name: formData.fullName ? formData.fullName.toUpperCase() : "PRO EDITOR",
     });
   };
 
   const getPaymentLabel = (method: PaymentMethodType = paymentMethod) => {
     switch (method) {
-      case "card": {
-        const digits = cardDetails.number.replace(/\s/g, "");
-        const last4 = digits.slice(-4) || "8892";
-        const brand = digits.startsWith("5") ? "Mastercard" : "Visa";
-        return `${brand} (•••• ${last4})`;
+      case "visa": {
+        const last4 = visaDetails.number.replace(/\s/g, "").slice(-4) || "8892";
+        return `Visa Card (•••• ${last4})`;
       }
+      case "mastercard": {
+        const last4 = mcDetails.number.replace(/\s/g, "").slice(-4) || "6621";
+        return `Mastercard (•••• ${last4})`;
+      }
+      case "jazzcash":
+        return `JazzCash Wallet (${jazzMobile})`;
+      case "easypaisa":
+        return `EasyPaisa Wallet (${easyMobile})`;
       case "paypal":
         return `PayPal (${formData.email})`;
-      case "applepay":
-        return "Apple Pay (Apple Card •••• 4021)";
-      case "googlepay":
-        return "Google Pay (•••• 9924)";
       case "cod":
         return "Cash on Delivery (COD)";
     }
@@ -193,53 +224,45 @@ export default function CheckoutPage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (paymentMethod === "jazzcash") {
+      setShowJazzModal(true);
+      return;
+    }
+    if (paymentMethod === "easypaisa") {
+      setShowEasyModal(true);
+      return;
+    }
     if (paymentMethod === "paypal") {
       setShowPayPalModal(true);
-      return;
-    }
-    if (paymentMethod === "applepay") {
-      setShowApplePaySheet(true);
-      return;
-    }
-    if (paymentMethod === "googlepay") {
-      setShowGooglePaySheet(true);
       return;
     }
 
     finalizeOrder();
   };
 
+  const handleApproveJazz = async () => {
+    setJazzProcessing(true);
+    await new Promise((r) => setTimeout(r, 1100));
+    setJazzProcessing(false);
+    setShowJazzModal(false);
+    await finalizeOrder(`JazzCash Wallet (Account: ${jazzMobile} • Ref #${createRefId("JC")})`);
+  };
+
+  const handleApproveEasy = async () => {
+    setEasyProcessing(true);
+    await new Promise((r) => setTimeout(r, 1100));
+    setEasyProcessing(false);
+    setShowEasyModal(false);
+    await finalizeOrder(`EasyPaisa Wallet (Account: ${easyMobile} • TRX #${createRefId("EP")})`);
+  };
+
   const handleApprovePayPal = async () => {
     setPayPalProcessing(true);
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1100));
     setPayPalProcessing(false);
     setShowPayPalModal(false);
     await finalizeOrder(`PayPal Sandbox (${formData.email})`);
   };
-
-  const handleTriggerApplePayBiometric = async () => {
-    setApplePayBiometricActive(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setApplePayDone(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setApplePayBiometricActive(false);
-    setShowApplePaySheet(false);
-    setApplePayDone(false);
-    await finalizeOrder("Apple Pay (Apple Card •••• 4021)");
-  };
-
-  const handleApproveGooglePay = async () => {
-    setGooglePayProcessing(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setGooglePayDone(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setGooglePayProcessing(false);
-    setShowGooglePaySheet(false);
-    setGooglePayDone(false);
-    await finalizeOrder("Google Pay (GPay •••• 9924)");
-  };
-
-  const isMastercard = cardDetails.number.replace(/\s/g, "").startsWith("5");
 
   if (orderComplete) {
     return (
@@ -305,7 +328,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Checkout Title - Clean SHOP.CO Styling */}
+      {/* Title */}
       <div>
         <Link
           href="/cart"
@@ -318,7 +341,7 @@ export default function CheckoutPage() {
           SECURE CHECKOUT
         </h1>
         <p className="text-sm text-neutral-500 mt-1">
-          Complete your order using your preferred payment method.
+          Complete your order using Visa, Mastercard, JazzCash, EasyPaisa, or PayPal.
         </p>
       </div>
 
@@ -346,6 +369,21 @@ export default function CheckoutPage() {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  placeholder="0300 1234567"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-[#F0F0F0] rounded-full text-sm font-mono text-black placeholder:text-neutral-400 outline-none focus:ring-1 focus:ring-black"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
                   Email Address
                 </label>
@@ -408,7 +446,7 @@ export default function CheckoutPage() {
             <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
               <div>
                 <h2 className="font-bold text-base text-black">Payment Method</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">Select your payment method</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Select your preferred payment gateway</p>
               </div>
               <span className="text-[11px] font-medium text-neutral-600 flex items-center gap-1.5 bg-[#F0F0F0] px-3 py-1 rounded-full">
                 <Lock className="w-3 h-3 text-black" />
@@ -417,11 +455,11 @@ export default function CheckoutPage() {
             </div>
 
             <div className="space-y-3">
-              {/* Option 1: Credit / Debit Card (Visa & Mastercard) with Luxury Black Card */}
+              {/* Option 1: VISA CARD (Royal Blue Virtual Card that the user loved) */}
               <div
-                onClick={() => setPaymentMethod("card")}
+                onClick={() => setPaymentMethod("visa")}
                 className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "card"
+                  paymentMethod === "visa"
                     ? "border-black bg-[#FAFAFA] ring-1 ring-black shadow-xs"
                     : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
                 }`}
@@ -431,139 +469,99 @@ export default function CheckoutPage() {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      checked={paymentMethod === "card"}
-                      onChange={() => setPaymentMethod("card")}
+                      checked={paymentMethod === "visa"}
+                      onChange={() => setPaymentMethod("visa")}
                       className="w-4 h-4 text-black accent-black cursor-pointer"
                     />
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-4 h-4 text-black" />
-                      <span className="font-semibold text-sm text-black">Pay with Cards</span>
+                      <span className="font-semibold text-sm text-black">Visa Card</span>
                     </div>
                   </div>
-                  {/* Visa & Mastercard Badges */}
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-7 px-2.5 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Visa">
-                      <svg className="h-2.5 w-auto" viewBox="0 0 36 12" fill="none">
-                        <path d="M14.6 0.2L9.6 11.8H6.3L3.8 2.6C3.7 2 3.5 1.7 3.1 1.5C2.4 1.1 1.1 0.7 0.1 0.4L0.2 0.2H5.5C6.2 0.2 6.8 0.7 6.9 1.5L8.2 8.8L11.5 0.2H14.6ZM27.4 8.1C27.4 5.2 23.6 5 23.7 3.6C23.7 3.2 24.1 2.7 25 2.6C25.4 2.5 26.6 2.5 27.9 3.1L28.5 0.4C27.7 0.1 26.7 -0.2 25.5 -0.2C22.4 -0.2 20.2 1.5 20.2 4C20.1 5.9 21.7 6.9 22.9 7.5C24.1 8.1 24.6 8.5 24.6 9.1C24.5 9.9 23.6 10.3 22.7 10.3C21.1 10.4 20.1 9.9 19.4 9.5L18.8 12.3C19.6 12.7 21 13 22.4 13C25.7 13 27.8 11.3 27.4 8.1ZM35.5 11.8H38.4L35.9 0.2H33.2C32.6 0.2 32.1 0.6 31.9 1.1L27.3 11.8H30.8L31.5 9.7H35.8L36.2 11.8H35.5ZM32.5 7L33.9 2.7L34.7 7H32.5ZM19.6 0.2L17 11.8H13.8L16.4 0.2H19.6Z" fill="#1434CB"/>
-                      </svg>
-                    </div>
-                    <div className="h-7 px-2 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Mastercard">
-                      <svg className="h-4 w-auto" viewBox="0 0 32 20" fill="none">
-                        <circle cx="10" cy="10" r="9" fill="#EB001B"/>
-                        <circle cx="22" cy="10" r="9" fill="#F79E1B"/>
-                        <path d="M16 3.6A8.99 8.99 0 0013 10c0 2.58 1.1 4.9 2.85 6.4A8.99 8.99 0 0019 10c0-2.58-1.1-4.9-2.85-6.4z" fill="#FF5F00"/>
-                      </svg>
-                    </div>
+                  {/* Visa Badge */}
+                  <div className="h-7 px-2.5 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Visa">
+                    <svg className="h-2.5 w-auto" viewBox="0 0 36 12" fill="none">
+                      <path d="M14.6 0.2L9.6 11.8H6.3L3.8 2.6C3.7 2 3.5 1.7 3.1 1.5C2.4 1.1 1.1 0.7 0.1 0.4L0.2 0.2H5.5C6.2 0.2 6.8 0.7 6.9 1.5L8.2 8.8L11.5 0.2H14.6ZM27.4 8.1C27.4 5.2 23.6 5 23.7 3.6C23.7 3.2 24.1 2.7 25 2.6C25.4 2.5 26.6 2.5 27.9 3.1L28.5 0.4C27.7 0.1 26.7 -0.2 25.5 -0.2C22.4 -0.2 20.2 1.5 20.2 4C20.1 5.9 21.7 6.9 22.9 7.5C24.1 8.1 24.6 8.5 24.6 9.1C24.5 9.9 23.6 10.3 22.7 10.3C21.1 10.4 20.1 9.9 19.4 9.5L18.8 12.3C19.6 12.7 21 13 22.4 13C25.7 13 27.8 11.3 27.4 8.1ZM35.5 11.8H38.4L35.9 0.2H33.2C32.6 0.2 32.1 0.6 31.9 1.1L27.3 11.8H30.8L31.5 9.7H35.8L36.2 11.8H35.5ZM32.5 7L33.9 2.7L34.7 7H32.5ZM19.6 0.2L17 11.8H13.8L16.4 0.2H19.6Z" fill="#1434CB"/>
+                    </svg>
                   </div>
                 </div>
 
-                {paymentMethod === "card" && (
+                {paymentMethod === "visa" && (
                   <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in duration-200">
                     
-                    {/* Luxury Matte Black Virtual Card Matching SHOP.CO Theme */}
-                    <div className="relative w-full max-w-md mx-auto aspect-[1.586/1] rounded-2xl p-5 sm:p-6 bg-gradient-to-tr from-black via-[#141414] to-[#262626] text-white shadow-xl overflow-hidden border border-neutral-800 select-none">
-                      {/* Subtle reflective dark sheen */}
-                      <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+                    {/* The Royal Blue Visa Card the user loved */}
+                    <div className="relative w-full max-w-md mx-auto aspect-[1.586/1] rounded-2xl p-5 sm:p-6 bg-gradient-to-tr from-[#0b1b3d] via-[#1434CB] to-[#2563EB] text-white shadow-xl overflow-hidden border border-white/20 select-none">
+                      <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
 
                       <div className="relative z-10 flex flex-col justify-between h-full">
-                        {/* Top: Chip & Brand Logo */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            {/* Gold EMV Chip */}
                             <div className="w-10 h-7 rounded-md bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 border border-amber-400 shadow-inner flex items-center justify-center">
                               <div className="w-6 h-4 border border-amber-600/40 rounded-sm grid grid-cols-2 gap-0.5 opacity-60">
                                 <span className="border-r border-amber-600/40" />
                                 <span />
                               </div>
                             </div>
-                            {/* Contactless Wave */}
-                            <svg className="w-5 h-5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg className="w-5 h-5 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M8.5 16.5a5 5 0 0 1 0-9" />
                               <path d="M12 19a8.5 8.5 0 0 0 0-14" />
                               <path d="M15.5 21.5a12 12 0 0 0 0-19" />
                             </svg>
                           </div>
-
-                          {/* Brand Logo in crisp white */}
-                          {isMastercard ? (
-                            <div className="flex items-center">
-                              <svg className="h-6 w-auto" viewBox="0 0 32 20" fill="none">
-                                <circle cx="10" cy="10" r="9" fill="#EB001B"/>
-                                <circle cx="22" cy="10" r="9" fill="#F79E1B"/>
-                                <path d="M16 3.6A8.99 8.99 0 0013 10c0 2.58 1.1 4.9 2.85 6.4A8.99 8.99 0 0019 10c0-2.58-1.1-4.9-2.85-6.4z" fill="#FF5F00"/>
-                              </svg>
-                            </div>
-                          ) : (
-                            <span className="font-bold italic tracking-tighter text-xl text-white font-sans">
-                              VISA
-                            </span>
-                          )}
+                          <span className="font-bold italic tracking-tighter text-xl text-white font-sans">
+                            VISA
+                          </span>
                         </div>
 
-                        {/* Middle: 16-Digit Number */}
                         <div className="py-1">
                           <p className="font-mono text-base sm:text-xl tracking-[0.22em] font-semibold text-white drop-shadow-md">
-                            {cardDetails.number || "•••• •••• •••• ••••"}
+                            {visaDetails.number || "•••• •••• •••• ••••"}
                           </p>
                         </div>
 
-                        {/* Bottom: Cardholder, Expiry & CVV */}
                         <div className="flex items-end justify-between text-xs">
                           <div className="max-w-[190px]">
-                            <span className="text-[8px] uppercase tracking-wider text-neutral-400 block font-semibold">CARDHOLDER</span>
+                            <span className="text-[8px] uppercase tracking-wider text-white/60 block font-semibold">CARDHOLDER</span>
                             <p className="font-medium tracking-wide uppercase truncate text-white">
-                              {cardDetails.name || formData.fullName.toUpperCase()}
+                              {visaDetails.name || formData.fullName.toUpperCase()}
                             </p>
                           </div>
                           <div className="flex items-center gap-3 text-right">
                             <div>
-                              <span className="text-[8px] uppercase tracking-wider text-neutral-400 block font-semibold">EXPIRES</span>
-                              <p className="font-mono font-medium text-white">{cardDetails.expiry || "12/28"}</p>
+                              <span className="text-[8px] uppercase tracking-wider text-white/60 block font-semibold">EXPIRES</span>
+                              <p className="font-mono font-medium text-white">{visaDetails.expiry || "12/28"}</p>
                             </div>
-                            <div className={`transition-all px-2 py-0.5 rounded ${isCvvFocused ? "bg-white/20 ring-1 ring-white/40" : ""}`}>
-                              <span className="text-[8px] uppercase tracking-wider text-neutral-400 block font-semibold">CVV</span>
-                              <p className="font-mono font-medium text-white">{cardDetails.cvc ? "•••" : "345"}</p>
+                            <div className={`transition-all px-2 py-0.5 rounded ${isCvvFocused ? "bg-amber-400/30 ring-1 ring-amber-300" : ""}`}>
+                              <span className="text-[8px] uppercase tracking-wider text-white/60 block font-semibold">CVV</span>
+                              <p className="font-mono font-medium text-white">{visaDetails.cvc ? "•••" : "345"}</p>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Quick Auto-fill buttons */}
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-xs text-neutral-500">Test Simulator</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={fillDemoVisa}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-black bg-[#F0F0F0] hover:bg-neutral-200 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          <span>Fill Visa</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={fillDemoMastercard}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-black bg-[#F0F0F0] hover:bg-neutral-200 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          <span>Fill Mastercard</span>
-                        </button>
-                      </div>
+                      <span className="text-xs text-neutral-500">Live Interactive Visa</span>
+                      <button
+                        type="button"
+                        onClick={fillDemoVisa}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-black bg-[#F0F0F0] hover:bg-neutral-200 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Auto-fill Demo Visa</span>
+                      </button>
                     </div>
 
-                    {/* Input Fields in Standard #F0F0F0 Website Style */}
                     <div className="space-y-3.5">
                       <div>
                         <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-                          Card Number
+                          Visa Card Number
                         </label>
                         <input
                           type="text"
-                          name="cardNumber"
                           placeholder="4532 8920 1204 8892"
-                          value={cardDetails.number}
-                          onChange={handleCardNumberChange}
+                          value={visaDetails.number}
+                          onChange={(e) => handleCardNumberChange(e.target.value, "visa")}
                           maxLength={19}
                           className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
                         />
@@ -576,10 +574,9 @@ export default function CheckoutPage() {
                           </label>
                           <input
                             type="text"
-                            name="cardExpiry"
                             placeholder="MM / YY"
-                            value={cardDetails.expiry}
-                            onChange={handleCardExpiryChange}
+                            value={visaDetails.expiry}
+                            onChange={(e) => handleCardExpiryChange(e.target.value, "visa")}
                             maxLength={5}
                             className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
                           />
@@ -590,10 +587,9 @@ export default function CheckoutPage() {
                           </label>
                           <input
                             type="text"
-                            name="cardCvc"
                             placeholder="345"
-                            value={cardDetails.cvc}
-                            onChange={handleCardCvcChange}
+                            value={visaDetails.cvc}
+                            onChange={(e) => handleCardCvcChange(e.target.value, "visa")}
                             onFocus={() => setIsCvvFocused(true)}
                             onBlur={() => setIsCvvFocused(false)}
                             maxLength={4}
@@ -608,10 +604,9 @@ export default function CheckoutPage() {
                         </label>
                         <input
                           type="text"
-                          name="cardName"
-                          placeholder="VALUED CUSTOMER"
-                          value={cardDetails.name}
-                          onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value.toUpperCase() })}
+                          placeholder="PRO EDITOR"
+                          value={visaDetails.name}
+                          onChange={(e) => setVisaDetails({ ...visaDetails, name: e.target.value.toUpperCase() })}
                           className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-semibold uppercase text-black outline-none focus:ring-1 focus:ring-black"
                         />
                       </div>
@@ -620,7 +615,288 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* Option 2: PayPal */}
+              {/* Option 2: MASTERCARD */}
+              <div
+                onClick={() => setPaymentMethod("mastercard")}
+                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
+                  paymentMethod === "mastercard"
+                    ? "border-black bg-[#FAFAFA] ring-1 ring-black shadow-xs"
+                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === "mastercard"}
+                      onChange={() => setPaymentMethod("mastercard")}
+                      className="w-4 h-4 text-black accent-black cursor-pointer"
+                    />
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-black" />
+                      <span className="font-semibold text-sm text-black">Mastercard</span>
+                    </div>
+                  </div>
+                  <div className="h-7 px-2 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Mastercard">
+                    <svg className="h-4 w-auto" viewBox="0 0 32 20" fill="none">
+                      <circle cx="10" cy="10" r="9" fill="#EB001B"/>
+                      <circle cx="22" cy="10" r="9" fill="#F79E1B"/>
+                      <path d="M16 3.6A8.99 8.99 0 0013 10c0 2.58 1.1 4.9 2.85 6.4A8.99 8.99 0 0019 10c0-2.58-1.1-4.9-2.85-6.4z" fill="#FF5F00"/>
+                    </svg>
+                  </div>
+                </div>
+
+                {paymentMethod === "mastercard" && (
+                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-md mx-auto aspect-[1.586/1] rounded-2xl p-5 sm:p-6 bg-gradient-to-tr from-[#121212] via-[#211d1d] to-[#3a1b1b] text-white shadow-xl overflow-hidden border border-white/20 select-none">
+                      <div className="relative z-10 flex flex-col justify-between h-full">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-7 rounded-md bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 border border-amber-400 shadow-inner flex items-center justify-center">
+                              <div className="w-6 h-4 border border-amber-600/40 rounded-sm grid grid-cols-2 gap-0.5 opacity-60">
+                                <span className="border-r border-amber-600/40" />
+                                <span />
+                              </div>
+                            </div>
+                            <svg className="w-5 h-5 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M8.5 16.5a5 5 0 0 1 0-9" />
+                              <path d="M12 19a8.5 8.5 0 0 0 0-14" />
+                              <path d="M15.5 21.5a12 12 0 0 0 0-19" />
+                            </svg>
+                          </div>
+                          <svg className="h-6 w-auto" viewBox="0 0 32 20" fill="none">
+                            <circle cx="10" cy="10" r="9" fill="#EB001B"/>
+                            <circle cx="22" cy="10" r="9" fill="#F79E1B"/>
+                            <path d="M16 3.6A8.99 8.99 0 0013 10c0 2.58 1.1 4.9 2.85 6.4A8.99 8.99 0 0019 10c0-2.58-1.1-4.9-2.85-6.4z" fill="#FF5F00"/>
+                          </svg>
+                        </div>
+
+                        <div className="py-1">
+                          <p className="font-mono text-base sm:text-xl tracking-[0.22em] font-semibold text-white drop-shadow-md">
+                            {mcDetails.number || "•••• •••• •••• ••••"}
+                          </p>
+                        </div>
+
+                        <div className="flex items-end justify-between text-xs">
+                          <div className="max-w-[190px]">
+                            <span className="text-[8px] uppercase tracking-wider text-white/60 block font-semibold">CARDHOLDER</span>
+                            <p className="font-medium tracking-wide uppercase truncate text-white">
+                              {mcDetails.name || formData.fullName.toUpperCase()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 text-right">
+                            <div>
+                              <span className="text-[8px] uppercase tracking-wider text-white/60 block font-semibold">EXPIRES</span>
+                              <p className="font-mono font-medium text-white">{mcDetails.expiry || "08/29"}</p>
+                            </div>
+                            <div className={`transition-all px-2 py-0.5 rounded ${isCvvFocused ? "bg-amber-400/30 ring-1 ring-amber-300" : ""}`}>
+                              <span className="text-[8px] uppercase tracking-wider text-white/60 block font-semibold">CVV</span>
+                              <p className="font-mono font-medium text-white">{mcDetails.cvc ? "•••" : "789"}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-neutral-500">Live Interactive Mastercard</span>
+                      <button
+                        type="button"
+                        onClick={fillDemoMastercard}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-black bg-[#F0F0F0] hover:bg-neutral-200 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Auto-fill Demo Mastercard</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3.5">
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                          Mastercard Number
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="5412 7534 8901 6621"
+                          value={mcDetails.number}
+                          onChange={(e) => handleCardNumberChange(e.target.value, "mastercard")}
+                          maxLength={19}
+                          className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                            Expiration Date
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="MM / YY"
+                            value={mcDetails.expiry}
+                            onChange={(e) => handleCardExpiryChange(e.target.value, "mastercard")}
+                            maxLength={5}
+                            className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                            Security Code (CVC)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="789"
+                            value={mcDetails.cvc}
+                            onChange={(e) => handleCardCvcChange(e.target.value, "mastercard")}
+                            onFocus={() => setIsCvvFocused(true)}
+                            onBlur={() => setIsCvvFocused(false)}
+                            maxLength={4}
+                            className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                          Name on Card
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="PRO EDITOR"
+                          value={mcDetails.name}
+                          onChange={(e) => setMcDetails({ ...mcDetails, name: e.target.value.toUpperCase() })}
+                          className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-semibold uppercase text-black outline-none focus:ring-1 focus:ring-black"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Option 3: JAZZCASH (The beloved Pakistani Mobile Wallet option) */}
+              <div
+                onClick={() => setPaymentMethod("jazzcash")}
+                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
+                  paymentMethod === "jazzcash"
+                    ? "border-black bg-[#FAFAFA] ring-1 ring-black shadow-xs"
+                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === "jazzcash"}
+                      onChange={() => setPaymentMethod("jazzcash")}
+                      className="w-4 h-4 text-black accent-black cursor-pointer"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-black">JazzCash</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-[#EC1C24] px-2 py-0.5 rounded-full">
+                        Pakistan 🇵🇰
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-7 px-2.5 bg-[#EC1C24] text-white rounded-md flex items-center justify-center shadow-xs font-bold text-xs tracking-wider" title="JazzCash">
+                    Jazz<span className="text-[#FFC20E]">Cash</span>
+                  </div>
+                </div>
+
+                {paymentMethod === "jazzcash" && (
+                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-3.5 animate-in fade-in duration-200">
+                    <p className="text-xs text-neutral-600">
+                      Pay instantly with your JazzCash mobile account via 1-tap MPIN authorization prompt.
+                    </p>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                        JazzCash Mobile Number
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="0300 1234567"
+                        value={jazzMobile}
+                        onChange={(e) => setJazzMobile(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowJazzModal(true)}
+                      className="w-full py-3.5 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-[#FFC20E]" />
+                      <span>Open JazzCash Portal ({formatPrice(finalTotal)})</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Option 4: EASYPAISA */}
+              <div
+                onClick={() => setPaymentMethod("easypaisa")}
+                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
+                  paymentMethod === "easypaisa"
+                    ? "border-black bg-[#FAFAFA] ring-1 ring-black shadow-xs"
+                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === "easypaisa"}
+                      onChange={() => setPaymentMethod("easypaisa")}
+                      className="w-4 h-4 text-black accent-black cursor-pointer"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm text-black">EasyPaisa</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-[#00A551] px-2 py-0.5 rounded-full">
+                        Pakistan 🇵🇰
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-7 px-2.5 bg-[#00A551] text-white rounded-md flex items-center justify-center shadow-xs font-bold text-xs tracking-tight" title="EasyPaisa">
+                    easypaisa
+                  </div>
+                </div>
+
+                {paymentMethod === "easypaisa" && (
+                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-3.5 animate-in fade-in duration-200">
+                    <p className="text-xs text-neutral-600">
+                      Authorize payment directly through your EasyPaisa mobile wallet account.
+                    </p>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
+                        EasyPaisa Account Number (03XX-XXXXXXX)
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="0345 7654321"
+                        value={easyMobile}
+                        onChange={(e) => setEasyMobile(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-xl text-sm font-mono text-black outline-none focus:ring-1 focus:ring-black"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowEasyModal(true)}
+                      className="w-full py-3.5 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-white" />
+                      <span>Open EasyPaisa Portal ({formatPrice(finalTotal)})</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Option 5: PAYPAL */}
               <div
                 onClick={() => setPaymentMethod("paypal")}
                 className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
@@ -658,111 +934,13 @@ export default function CheckoutPage() {
                       onClick={() => setShowPayPalModal(true)}
                       className="w-full py-3.5 rounded-full font-bold text-[#003087] bg-[#FFC439] hover:bg-[#f4b82d] shadow-sm text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <svg className="h-4 w-auto" viewBox="0 0 28 20" fill="none">
-                        <path d="M9.8 18.5H6.2C5.9 18.5 5.7 18.3 5.6 18L3 2.5C2.9 2.2 3.1 1.9 3.4 1.9H11.5C14.8 1.9 17.1 2.6 18 4.2C18.6 5.1 18.7 6.3 18.2 7.7C17.6 9.7 16.1 11.2 14.2 11.8C13.6 12 12.8 12.1 11.9 12.1H9.9L8.6 18.2C8.6 18.4 8.8 18.5 9 18.5H9.8Z" fill="#003087"/>
-                        <path d="M12.3 6.8H8.8C8.6 6.8 8.4 7 8.3 7.2L6.6 18C6.5 18.2 6.7 18.4 6.9 18.4H10.1C10.3 18.4 10.5 18.2 10.6 18L11.5 12.8C11.5 12.6 11.7 12.4 12 12.4H13.6C16.5 12.4 18.8 11.2 19.4 7.7C19.7 6 19.3 4.6 18.3 3.6C17.7 5.2 15.6 6.8 12.3 6.8Z" fill="#0079C1"/>
-                      </svg>
                       <span>Pay with PayPal ({formatPrice(finalTotal)})</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Option 3: Apple Pay */}
-              <div
-                onClick={() => setPaymentMethod("applepay")}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "applepay"
-                    ? "border-black bg-[#FAFAFA] ring-1 ring-black shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentMethod === "applepay"}
-                      onChange={() => setPaymentMethod("applepay")}
-                      className="w-4 h-4 text-black accent-black cursor-pointer"
-                    />
-                    <span className="font-semibold text-sm text-black">Apple Pay</span>
-                  </div>
-                  <div className="h-7 px-2.5 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Apple Pay">
-                    <svg className="h-3.5 w-auto" viewBox="0 0 36 15" fill="black">
-                      <path d="M4.6 0.1C4.3 0.6 3.9 1.1 3.4 1.4C2.9 1.8 2.3 2 1.8 2C1.7 1.4 1.9 0.8 2.3 0.4C2.7 0.1 3.4 -0.1 4.6 0.1ZM4.7 2.2C4.1 2.2 3.6 2.5 3.3 2.5C3 2.5 2.5 2.2 2 2.2C1.1 2.2 0.3 2.8 0 3.8C-0.3 5.4 0.6 7.9 1.7 9.8C2.1 10.4 2.5 11 3.1 11C3.6 11 3.8 10.7 4.5 10.7C5.1 10.7 5.3 11 5.9 11C6.5 11 7 10.4 7.4 9.8C7.9 9 8.2 8.3 8.3 8C7.4 7.6 6.8 6.6 6.8 5.6C6.8 4.3 7.8 3.4 8.8 3.1C8.2 2.4 7.3 2.2 6.6 2.2C5.9 2.2 5.3 2.5 4.7 2.2Z"/>
-                      <path d="M12.5 2.3H10V11H11.5V7.9H12.5C14.4 7.9 15.7 6.8 15.7 5.1C15.7 3.4 14.4 2.3 12.5 2.3ZM12.4 6.6H11.5V3.6H12.4C13.5 3.6 14.1 4.2 14.1 5.1C14.1 6 13.5 6.6 12.4 6.6ZM19.7 11V5.7H18.3V6.7C18 6 17.2 5.5 16.3 5.5C15 5.5 14 6.6 14 8.3C14 10 15 11.1 16.3 11.1C17.2 11.1 18 10.6 18.3 9.9V11H19.7ZM16.8 9.9C15.9 9.9 15.4 9.2 15.4 8.3C15.4 7.4 15.9 6.7 16.8 6.7C17.7 6.7 18.3 7.4 18.3 8.3C18.3 9.2 17.7 9.9 16.8 9.9ZM21 13.5C22.6 13.5 23.4 12.8 23.9 11.3L26.5 5.7H25L23.3 9.9L21.6 5.7H20L22.2 10.8L21.7 12.2C21.4 12.5 21.1 12.6 20.8 12.6C20.6 12.6 20.3 12.6 20.1 12.5L20 13.4C20.3 13.5 20.6 13.5 21 13.5Z"/>
-                    </svg>
-                  </div>
-                </div>
-
-                {paymentMethod === "applepay" && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-3 animate-in fade-in duration-200">
-                    <p className="text-xs text-neutral-600">
-                      Express 1-touch checkout with Apple Pay biometric wallet.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowApplePaySheet(true)}
-                      className="w-full py-3.5 rounded-full font-semibold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span className="text-sm"></span>
-                      <span>Pay with Apple Pay ({formatPrice(finalTotal)})</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Option 4: Google Pay */}
-              <div
-                onClick={() => setPaymentMethod("googlepay")}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === "googlepay"
-                    ? "border-black bg-[#FAFAFA] ring-1 ring-black shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50/50"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentMethod === "googlepay"}
-                      onChange={() => setPaymentMethod("googlepay")}
-                      className="w-4 h-4 text-black accent-black cursor-pointer"
-                    />
-                    <span className="font-semibold text-sm text-black">Google Pay</span>
-                  </div>
-                  <div className="h-7 px-2.5 bg-white border border-neutral-200 rounded-md flex items-center justify-center shadow-xs" title="Google Pay">
-                    <svg className="h-3.5 w-auto" viewBox="0 0 38 16" fill="none">
-                      <path d="M7.7 8.1V6.3H4V9.8H6.2C5.9 10.9 4.9 11.6 3.8 11.4C2.5 11.2 1.6 10 1.6 8.7C1.6 7.4 2.5 6.2 3.8 6C4.4 5.9 5.1 6.1 5.6 6.5L6.9 5.2C6 4.4 4.8 4 3.6 4.1C1.6 4.3 0 6 0 8C0 10.2 1.8 12 4 12C6.1 12 7.7 10.4 7.7 8.1Z" fill="#4285F4"/>
-                      <path d="M12.8 5.5H10.5V12H11.8V9.8H12.8C14.3 9.8 15.5 8.9 15.5 7.6C15.5 6.3 14.3 5.5 12.8 5.5ZM12.7 8.6H11.8V6.6H12.7C13.6 6.6 14.2 7 14.2 7.6C14.2 8.2 13.6 8.6 12.7 8.6ZM19.2 12V7.7H18V8.5C17.7 7.9 17 7.5 16.3 7.5C15.1 7.5 14.2 8.5 14.2 9.8C14.2 11.1 15.1 12.1 16.3 12.1C17 12.1 17.7 11.7 18 11.1V12H19.2ZM16.7 11.1C15.9 11.1 15.4 10.5 15.4 9.8C15.4 9.1 15.9 8.5 16.7 8.5C17.5 8.5 18 9.1 18 9.8C18 10.5 17.5 11.1 16.7 11.1ZM20.7 14.1C22 14.1 22.8 13.5 23.3 12.3L25.5 7.7H24.1L22.7 11.1L21.3 7.7H19.9L21.8 11.9L21.4 13C21.1 13.3 20.8 13.4 20.6 13.4C20.4 13.4 20.2 13.4 20 13.3L19.9 14C20.1 14.1 20.4 14.1 20.7 14.1Z" fill="#5F6368"/>
-                    </svg>
-                  </div>
-                </div>
-
-                {paymentMethod === "googlepay" && (
-                  <div className="mt-4 pt-4 border-t border-neutral-200 space-y-3 animate-in fade-in duration-200">
-                    <p className="text-xs text-neutral-600">
-                      Fast 1-tap checkout with payment methods saved to your Google Account.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowGooglePaySheet(true)}
-                      className="w-full py-3.5 rounded-full font-semibold text-black bg-[#F0F0F0] hover:bg-neutral-200 border border-neutral-300 shadow-xs text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span className="font-bold">Buy with</span>
-                      <svg className="h-3.5 w-auto" viewBox="0 0 38 16" fill="none">
-                        <path d="M7.7 8.1V6.3H4V9.8H6.2C5.9 10.9 4.9 11.6 3.8 11.4C2.5 11.2 1.6 10 1.6 8.7C1.6 7.4 2.5 6.2 3.8 6C4.4 5.9 5.1 6.1 5.6 6.5L6.9 5.2C6 4.4 4.8 4 3.6 4.1C1.6 4.3 0 6 0 8C0 10.2 1.8 12 4 12C6.1 12 7.7 10.4 7.7 8.1Z" fill="#4285F4"/>
-                        <path d="M12.8 5.5H10.5V12H11.8V9.8H12.8C14.3 9.8 15.5 8.9 15.5 7.6C15.5 6.3 14.3 5.5 12.8 5.5ZM12.7 8.6H11.8V6.6H12.7C13.6 6.6 14.2 7 14.2 7.6C14.2 8.2 13.6 8.6 12.7 8.6ZM19.2 12V7.7H18V8.5C17.7 7.9 17 7.5 16.3 7.5C15.1 7.5 14.2 8.5 14.2 9.8C14.2 11.1 15.1 12.1 16.3 12.1C17 12.1 17.7 11.7 18 11.1V12H19.2ZM16.7 11.1C15.9 11.1 15.4 10.5 15.4 9.8C15.4 9.1 15.9 8.5 16.7 8.5C17.5 8.5 18 9.1 18 9.8C18 10.5 17.5 11.1 16.7 11.1ZM20.7 14.1C22 14.1 22.8 13.5 23.3 12.3L25.5 7.7H24.1L22.7 11.1L21.3 7.7H19.9L21.8 11.9L21.4 13C21.1 13.3 20.8 13.4 20.6 13.4C20.4 13.4 20.2 13.4 20 13.3L19.9 14C20.1 14.1 20.4 14.1 20.7 14.1Z" fill="#5F6368"/>
-                      </svg>
-                      <span>({formatPrice(finalTotal)})</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Option 5: Cash on Delivery (COD) */}
+              {/* Option 6: Cash on Delivery (COD) */}
               <div
                 onClick={() => setPaymentMethod("cod")}
                 className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer ${
@@ -804,10 +982,10 @@ export default function CheckoutPage() {
           <div className="p-6 rounded-3xl border border-neutral-200 bg-[#F2F0F1] space-y-2">
             <div className="flex items-center gap-2 text-black">
               <ShieldCheck className="w-5 h-5 text-black" />
-              <h3 className="font-bold text-sm">Secure Transaction Guarantee</h3>
+              <h3 className="font-bold text-sm">Official Secure Checkout Guarantee</h3>
             </div>
             <p className="text-xs text-neutral-600 leading-relaxed">
-              Your payment information is encrypted and processed securely. Transactions seamlessly simulate real orders for testing and catalog review.
+              Your payment information is encrypted and processed with 256-bit SSL security. Transactions simulate instant order processing for customer portfolio testing.
             </p>
           </div>
         </div>
@@ -853,9 +1031,15 @@ export default function CheckoutPage() {
               <span>Estimated Tax</span>
               <span className="font-semibold text-black">{formatPrice(tax)}</span>
             </div>
-            <div className="pt-3 border-t border-neutral-200 flex justify-between font-bold text-base text-black">
-              <span>Total Due</span>
-              <span className="text-xl font-extrabold text-black">{formatPrice(finalTotal)}</span>
+            <div className="pt-3 border-t border-neutral-200 space-y-1">
+              <div className="flex justify-between font-bold text-base text-black">
+                <span>Total Due</span>
+                <span className="text-xl font-extrabold text-black">{formatPrice(finalTotal)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-neutral-500 font-medium">
+                <span>Approximate PKR:</span>
+                <span className="font-mono font-bold text-black">₨ {pkrEquivalent.toLocaleString("en-PK")}</span>
+              </div>
             </div>
           </div>
 
@@ -869,20 +1053,206 @@ export default function CheckoutPage() {
                 <RefreshCw className="w-4 h-4 animate-spin" />
                 <span>Processing Order...</span>
               </span>
-            ) : paymentMethod === "card" ? (
-              `Place Order (${formatPrice(finalTotal)})`
+            ) : paymentMethod === "visa" ? (
+              `Pay with Visa (${formatPrice(finalTotal)})`
+            ) : paymentMethod === "mastercard" ? (
+              `Pay with Mastercard (${formatPrice(finalTotal)})`
+            ) : paymentMethod === "jazzcash" ? (
+              `Pay with JazzCash (${formatPrice(finalTotal)})`
+            ) : paymentMethod === "easypaisa" ? (
+              `Pay with EasyPaisa (${formatPrice(finalTotal)})`
             ) : paymentMethod === "paypal" ? (
               `Pay with PayPal (${formatPrice(finalTotal)})`
-            ) : paymentMethod === "applepay" ? (
-              `Pay with Apple Pay (${formatPrice(finalTotal)})`
-            ) : paymentMethod === "googlepay" ? (
-              `Pay with Google Pay (${formatPrice(finalTotal)})`
             ) : (
               `Confirm Cash on Delivery (${formatPrice(finalTotal)})`
             )}
           </button>
         </div>
       </form>
+
+      {/* JazzCash Modal */}
+      {showJazzModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-[#EC1C24] p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white text-[#EC1C24] font-black text-sm flex items-center justify-center shadow-xs">
+                  JC
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">JazzCash Mobile Payment</h3>
+                  <p className="text-[10px] text-red-100">Simulated 1-Tap Authorization</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowJazzModal(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="p-3.5 bg-[#F0F0F0] rounded-2xl text-center space-y-1">
+                <p className="text-xs text-neutral-500 font-semibold uppercase text-[10px]">Total Amount</p>
+                <p className="text-xl font-black text-[#EC1C24]">₨ {pkrEquivalent.toLocaleString("en-PK")} PKR</p>
+                <p className="text-[11px] text-neutral-500">ShopFlow Store • {formatPrice(finalTotal)} USD</p>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between py-1.5 border-b border-neutral-100">
+                  <span className="text-neutral-500">JazzCash Account</span>
+                  <span className="font-bold text-black font-mono">{jazzMobile}</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-neutral-100">
+                  <span className="text-neutral-500">Customer</span>
+                  <span className="font-semibold text-black">{formData.fullName}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <label className="block text-xs font-bold text-neutral-700">
+                  Enter 4-Digit JazzCash MPIN
+                </label>
+                <input
+                  type="password"
+                  maxLength={4}
+                  placeholder="••••"
+                  value={jazzMpin}
+                  onChange={(e) => setJazzMpin(e.target.value.replace(/\D/g, ""))}
+                  className="w-full text-center tracking-[0.5em] text-xl font-mono py-2.5 bg-[#F0F0F0] rounded-2xl outline-none focus:ring-1 focus:ring-black"
+                />
+                <button
+                  type="button"
+                  onClick={() => setJazzMpin("1234")}
+                  className="text-[11px] text-[#EC1C24] font-semibold hover:underline block text-center cursor-pointer"
+                >
+                  Quick-fill Demo MPIN (1234)
+                </button>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleApproveJazz}
+                  disabled={jazzProcessing}
+                  className="w-full py-3.5 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {jazzProcessing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Authorizing with JazzCash...</span>
+                    </>
+                  ) : (
+                    <span>Authorize Payment</span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowJazzModal(false)}
+                  className="w-full py-1.5 text-xs text-neutral-500 hover:text-black transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EasyPaisa Modal */}
+      {showEasyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-[#00A551] p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white text-[#00A551] font-black text-sm flex items-center justify-center shadow-xs">
+                  EP
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">EasyPaisa Mobile Payment</h3>
+                  <p className="text-[10px] text-emerald-100">Simulated 1-Tap Authorization</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEasyModal(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="p-3.5 bg-[#F0F0F0] rounded-2xl text-center space-y-1">
+                <p className="text-xs text-neutral-500 font-semibold uppercase text-[10px]">Total Amount</p>
+                <p className="text-xl font-black text-[#00A551]">₨ {pkrEquivalent.toLocaleString("en-PK")} PKR</p>
+                <p className="text-[11px] text-neutral-500">ShopFlow Store • {formatPrice(finalTotal)} USD</p>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between py-1.5 border-b border-neutral-100">
+                  <span className="text-neutral-500">EasyPaisa Mobile</span>
+                  <span className="font-bold text-black font-mono">{easyMobile}</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-neutral-100">
+                  <span className="text-neutral-500">Customer</span>
+                  <span className="font-semibold text-black">{formData.fullName}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <label className="block text-xs font-bold text-neutral-700">
+                  Enter 5-Digit EasyPaisa Secret PIN
+                </label>
+                <input
+                  type="password"
+                  maxLength={5}
+                  placeholder="•••••"
+                  value={easyPin}
+                  onChange={(e) => setEasyPin(e.target.value.replace(/\D/g, ""))}
+                  className="w-full text-center tracking-[0.5em] text-xl font-mono py-2.5 bg-[#F0F0F0] rounded-2xl outline-none focus:ring-1 focus:ring-black"
+                />
+                <button
+                  type="button"
+                  onClick={() => setEasyPin("55555")}
+                  className="text-[11px] text-[#00A551] font-semibold hover:underline block text-center cursor-pointer"
+                >
+                  Quick-fill Demo PIN (55555)
+                </button>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleApproveEasy}
+                  disabled={easyProcessing}
+                  className="w-full py-3.5 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {easyProcessing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Authorizing with EasyPaisa...</span>
+                    </>
+                  ) : (
+                    <span>Approve Payment</span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowEasyModal(false)}
+                  className="w-full py-1.5 text-xs text-neutral-500 hover:text-black transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PayPal Modal */}
       {showPayPalModal && (
@@ -945,140 +1315,6 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setShowPayPalModal(false)}
-                  className="w-full py-2 text-xs text-neutral-500 hover:text-black transition-colors"
-                >
-                  Cancel and return
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Apple Pay Sheet */}
-      {showApplePaySheet && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-[#1C1C1E] text-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-white/10 overflow-hidden animate-in slide-in-from-bottom duration-300">
-            <div className="p-6 space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-semibold">Pay</span>
-                  <span className="text-xs text-neutral-400">SHOP.CO</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowApplePaySheet(false)}
-                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer text-neutral-300"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 border border-white/10">
-                <div>
-                  <p className="text-xs font-semibold text-white">Apple Card</p>
-                  <p className="text-[11px] text-neutral-400">Mastercard (•••• 4021)</p>
-                </div>
-                <span className="text-xs font-mono font-bold text-white">{formatPrice(finalTotal)}</span>
-              </div>
-
-              <div className="pt-2 text-center space-y-4">
-                <button
-                  type="button"
-                  onClick={handleTriggerApplePayBiometric}
-                  disabled={applePayBiometricActive || applePayDone}
-                  className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                    applePayDone
-                      ? "bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/30"
-                      : applePayBiometricActive
-                      ? "bg-blue-600 text-white animate-pulse ring-4 ring-blue-400/40"
-                      : "bg-white/10 text-white hover:bg-white/20 active:scale-95"
-                  }`}
-                >
-                  {applePayDone ? (
-                    <Check className="w-10 h-10 animate-in zoom-in-75 duration-200" />
-                  ) : (
-                    <Fingerprint className="w-10 h-10" />
-                  )}
-                </button>
-
-                <p className="text-xs text-neutral-400">
-                  {applePayDone
-                    ? "Payment Verified!"
-                    : applePayBiometricActive
-                    ? "Authenticating Biometrics..."
-                    : "Double Click or Tap Sensor to Pay"}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={handleTriggerApplePayBiometric}
-                  disabled={applePayBiometricActive || applePayDone}
-                  className="w-full py-3.5 rounded-full font-semibold text-black bg-white hover:bg-neutral-100 shadow-md text-xs uppercase tracking-wider transition-all cursor-pointer"
-                >
-                  Confirm with Apple Pay ({formatPrice(finalTotal)})
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Google Pay Sheet */}
-      {showGooglePaySheet && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-neutral-600">GPay</span>
-                <span className="text-xs text-neutral-400">• SHOP.CO Store</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowGooglePaySheet(false)}
-                className="w-7 h-7 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-500 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              <div className="p-3.5 bg-[#F0F0F0] rounded-2xl text-xs space-y-1">
-                <p className="text-neutral-500 font-semibold uppercase text-[10px]">Google Account</p>
-                <p className="font-bold text-black">{formData.email}</p>
-                <p className="text-neutral-500 text-[11px]">Virtual Card (•••• 9924)</p>
-              </div>
-
-              <div className="space-y-3 pt-1">
-                <div className="flex justify-between items-center text-sm font-bold text-black px-1">
-                  <span>Total Due</span>
-                  <span>{formatPrice(finalTotal)}</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleApproveGooglePay}
-                  disabled={googlePayProcessing || googlePayDone}
-                  className="w-full py-4 rounded-full font-bold text-white bg-black hover:bg-neutral-800 shadow-md text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {googlePayDone ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Google Pay Approved!</span>
-                    </>
-                  ) : googlePayProcessing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Authorizing...</span>
-                    </>
-                  ) : (
-                    <span>Pay {formatPrice(finalTotal)} with GPay</span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowGooglePaySheet(false)}
                   className="w-full py-2 text-xs text-neutral-500 hover:text-black transition-colors"
                 >
                   Cancel and return
