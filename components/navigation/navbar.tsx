@@ -11,7 +11,6 @@ export function Navbar() {
   const { totalCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [shopDropdownOpen, setShopDropdownOpen] = useState(false);
-  const [bannerVisible, setBannerVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -23,19 +22,6 @@ export function Navbar() {
       router.push("/products");
     }
   };
-
-  // Reveal top banner when cursor approaches the top edge (<= 40px), hide when cursor leaves (> 85px)
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientY <= 38) {
-        setBannerVisible(true);
-      } else if (e.clientY > 90) {
-        setBannerVisible(false);
-      }
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
 
   // Close dropdown if clicking outside
   useEffect(() => {
@@ -50,43 +36,16 @@ export function Navbar() {
 
   return (
     <div className="sticky top-0 z-50">
-      {/* Invisible top hover trigger zone - hovering the top edge reveals banner */}
-      <div
-        onMouseEnter={() => setBannerVisible(true)}
-        className="absolute top-0 left-0 right-0 h-2 z-50 pointer-events-auto"
-        aria-hidden="true"
-      />
-
-      {/* Top Banner - hidden by default, slides down smoothly when hovering or cursor close to top */}
-      <div
-        onMouseEnter={() => setBannerVisible(true)}
-        className={`bg-black text-white text-xs transition-all duration-300 ease-out overflow-hidden ${
-          bannerVisible
-            ? "max-h-12 py-2.5 opacity-100 translate-y-0 pointer-events-auto"
-            : "max-h-0 py-0 opacity-0 -translate-y-full pointer-events-none"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-2">
-          <div className="flex-1" />
-          <div className="flex items-center justify-center gap-2">
-            <span className="flex items-center gap-1.5 font-normal">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Sign up and get 20% off to your first order.
-            </span>
-            <Link href="/register" className="underline font-semibold hover:text-neutral-300 ml-1">
-              Sign Up Now
-            </Link>
-          </div>
-          <div className="flex-1 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setBannerVisible(false)}
-              className="p-1 text-neutral-400 hover:text-white transition-colors cursor-pointer"
-              aria-label="Dismiss banner"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
+      {/* Top Banner - standard and clean, always visible */}
+      <div className="bg-black text-white text-xs py-2.5">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-center gap-2">
+          <span className="flex items-center gap-1.5 font-normal">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+            Sign up and get 20% off to your first order.
+          </span>
+          <Link href="/register" className="underline font-semibold hover:text-neutral-300 ml-1">
+            Sign Up Now
+          </Link>
         </div>
       </div>
 
@@ -113,13 +72,17 @@ export function Navbar() {
             {/* Desktop Navigation Links */}
             <nav className="hidden lg:flex items-center gap-6 text-sm font-normal text-black whitespace-nowrap">
               
-              {/* Interactive Shop Dropdown */}
-              <div ref={dropdownRef} className="relative">
+              {/* Interactive Shop Dropdown (Hovers and Opens) */}
+              <div
+                ref={dropdownRef}
+                onMouseEnter={() => setShopDropdownOpen(true)}
+                onMouseLeave={() => setShopDropdownOpen(false)}
+                className="relative py-2"
+              >
                 <button
                   type="button"
                   onClick={() => setShopDropdownOpen(!shopDropdownOpen)}
-                  onMouseEnter={() => setShopDropdownOpen(true)}
-                  className="flex items-center gap-1 cursor-pointer font-medium text-black hover:text-neutral-600 py-2 focus:outline-none"
+                  className="flex items-center gap-1 cursor-pointer font-medium text-black hover:text-neutral-600 focus:outline-none"
                   aria-expanded={shopDropdownOpen}
                 >
                   <span>Shop</span>
@@ -128,10 +91,7 @@ export function Navbar() {
 
                 {/* Dropdown Menu Modal */}
                 {shopDropdownOpen && (
-                  <div
-                    onMouseLeave={() => setShopDropdownOpen(false)}
-                    className="absolute top-full left-0 mt-1 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-200/80 p-3 z-50 animate-in fade-in zoom-in-95 duration-150"
-                  >
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-2xl shadow-2xl border border-neutral-200/80 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
                     <div className="space-y-1">
                       <Link
                         href="/products"

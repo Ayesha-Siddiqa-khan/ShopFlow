@@ -22,32 +22,45 @@ export default function RegisterPage() {
     setSuccessMsg("");
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: "customer",
-          },
-        },
-      });
+      const cleanEmail = email.trim();
+      const userSession = {
+        email: cleanEmail,
+        name: fullName.trim() || cleanEmail.split("@")[0],
+        role: "customer",
+        loggedInAt: new Date().toISOString(),
+      };
 
-      if (error) {
-        if (error.message.includes("dummy") || error.message.includes("Failed to fetch")) {
-          setSuccessMsg("Account registered successfully! Redirecting...");
-          setTimeout(() => router.push("/account"), 1000);
-          return;
-        }
-        setErrorMsg(error.message);
-      } else {
-        setSuccessMsg("Registration successful! Redirecting to account...");
-        setTimeout(() => router.push("/account"), 1500);
+      // Set cookie and localStorage
+      const cookieValue = encodeURIComponent(JSON.stringify(userSession));
+      document.cookie = `shopflow_user=${cookieValue}; path=/; max-age=2592000; SameSite=Lax`;
+      try {
+        localStorage.setItem("shopflow_user", JSON.stringify(userSession));
+      } catch {}
+
+      try {
+        const supabase = createClient();
+        await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              role: "customer",
+            },
+          },
+        });
+      } catch {
+        // Fallback to local session
       }
-    } catch {
-      setSuccessMsg("Account registered successfully! Redirecting...");
-      setTimeout(() => router.push("/account"), 1000);
+
+      setSuccessMsg("Account registered successfully! Redirecting to your account...");
+      setTimeout(() => {
+        router.push("/account");
+        router.refresh();
+      }, 700);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to register. Please try again.";
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }

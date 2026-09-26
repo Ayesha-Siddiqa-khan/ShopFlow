@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { User, Package, LogOut, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { User, Package, LogOut, ShieldCheck, Check } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 const MOCK_ORDERS = [
@@ -28,21 +29,67 @@ const MOCK_ORDERS = [
 ];
 
 export default function AccountPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"orders" | "profile">("orders");
+  const [currentUser, setCurrentUser] = useState({
+    name: "Customer",
+    email: "customer@example.com",
+    role: "customer",
+  });
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const stored = localStorage.getItem("shopflow_user");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setCurrentUser({
+            name: parsed.name || parsed.email?.split("@")[0] || "Valued Customer",
+            email: parsed.email || "customer@example.com",
+            role: parsed.role || "customer",
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSignOut = () => {
+    document.cookie = "shopflow_user=; path=/; max-age=0";
+    try {
+      localStorage.removeItem("shopflow_user");
+    } catch {}
+    router.push("/login");
+    router.refresh();
+  };
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      localStorage.setItem("shopflow_user", JSON.stringify(currentUser));
+      const cookieValue = encodeURIComponent(JSON.stringify(currentUser));
+      document.cookie = `shopflow_user=${cookieValue}; path=/; max-age=2592000; SameSite=Lax`;
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
+    } catch {}
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       {/* Account Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-neutral-200 pb-6">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center text-white shadow-md">
-            <User className="w-7 h-7" />
+          <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center text-white shadow-md font-bold text-lg uppercase">
+            {currentUser.name.charAt(0) || "U"}
           </div>
           <div>
             <h1 className="text-2xl font-bold text-black tracking-tight">
-              Alex Rivera
+              {currentUser.name}
             </h1>
-            <p className="text-xs text-neutral-500">alex@example.com • Member since 2026</p>
+            <p className="text-xs text-neutral-500">{currentUser.email} • Member since 2026</p>
           </div>
         </div>
 
@@ -54,13 +101,14 @@ export default function AccountPage() {
             <ShieldCheck className="w-4 h-4 text-black" />
             <span>Admin Portal</span>
           </Link>
-          <Link
-            href="/login"
-            className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-semibold rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100"
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-semibold rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -68,7 +116,7 @@ export default function AccountPage() {
       <div className="flex items-center gap-6 border-b border-neutral-200 pb-2">
         <button
           onClick={() => setActiveTab("orders")}
-          className={`flex items-center gap-2 pb-2 text-sm font-semibold transition-colors border-b-2 -mb-2.5 ${
+          className={`flex items-center gap-2 pb-2 text-sm font-semibold transition-colors border-b-2 -mb-2.5 cursor-pointer ${
             activeTab === "orders"
               ? "border-black text-black"
               : "border-transparent text-neutral-400 hover:text-black"
@@ -80,7 +128,7 @@ export default function AccountPage() {
 
         <button
           onClick={() => setActiveTab("profile")}
-          className={`flex items-center gap-2 pb-2 text-sm font-semibold transition-colors border-b-2 -mb-2.5 ${
+          className={`flex items-center gap-2 pb-2 text-sm font-semibold transition-colors border-b-2 -mb-2.5 cursor-pointer ${
             activeTab === "profile"
               ? "border-black text-black"
               : "border-transparent text-neutral-400 hover:text-black"
@@ -139,8 +187,15 @@ export default function AccountPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white p-8 rounded-3xl border border-neutral-200 max-w-xl space-y-6">
-          <h2 className="font-bold text-lg text-black">Personal Information</h2>
+        <form onSubmit={handleSaveProfile} className="bg-white p-8 rounded-3xl border border-neutral-200 max-w-xl space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-lg text-black">Personal Information</h2>
+            {savedSuccess && (
+              <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-semibold">
+                <Check className="w-3.5 h-3.5" /> Saved!
+              </span>
+            )}
+          </div>
           <div className="space-y-4 text-sm">
             <div>
               <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
@@ -148,8 +203,9 @@ export default function AccountPage() {
               </label>
               <input
                 type="text"
-                defaultValue="Alex Rivera"
-                className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-full text-sm text-black outline-none"
+                value={currentUser.name}
+                onChange={(e) => setCurrentUser({ ...currentUser, name: e.target.value })}
+                className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-full text-sm text-black outline-none focus:ring-1 focus:ring-black"
               />
             </div>
             <div>
@@ -158,15 +214,19 @@ export default function AccountPage() {
               </label>
               <input
                 type="email"
-                defaultValue="alex@example.com"
-                className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-full text-sm text-black outline-none"
+                value={currentUser.email}
+                onChange={(e) => setCurrentUser({ ...currentUser, email: e.target.value })}
+                className="w-full px-4 py-2.5 bg-[#F0F0F0] rounded-full text-sm text-black outline-none focus:ring-1 focus:ring-black"
               />
             </div>
-            <button className="px-8 py-3 bg-black text-white rounded-full font-semibold text-xs hover:bg-neutral-800">
+            <button
+              type="submit"
+              className="px-8 py-3 bg-black text-white rounded-full font-semibold text-xs hover:bg-neutral-800 transition-colors cursor-pointer"
+            >
               Save Changes
             </button>
           </div>
-        </div>
+        </form>
       )}
     </div>
   );
