@@ -39,7 +39,7 @@ export default async function HomePage() {
           <h2 className="font-integral text-3xl sm:text-5xl text-black">
             NEW ARRIVALS
           </h2>
-          <div className="w-16 h-1 bg-black rounded-full mt-3" />
+          <div className="w-20 h-1 bg-gradient-to-r from-transparent via-black to-transparent rounded-full mt-3" />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
@@ -51,10 +51,10 @@ export default async function HomePage() {
         <div className="text-center mt-10">
           <Link
             href="/products"
-            className="inline-flex items-center gap-2 px-14 py-3.5 border border-neutral-200 rounded-full text-sm font-semibold text-black hover:bg-black hover:text-white transition-all duration-200 hover:shadow-md"
+            className="group inline-flex items-center gap-2.5 px-14 py-3.5 border border-neutral-300 rounded-full text-sm font-semibold text-black hover:bg-black hover:text-white hover:border-black transition-all duration-300 hover:shadow-lg hover:scale-105"
           >
             <span>View All</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
         </div>
       </section>
@@ -71,7 +71,7 @@ export default async function HomePage() {
           <h2 className="font-integral text-3xl sm:text-5xl text-black">
             TOP SELLING
           </h2>
-          <div className="w-16 h-1 bg-black rounded-full mt-3" />
+          <div className="w-20 h-1 bg-gradient-to-r from-transparent via-black to-transparent rounded-full mt-3" />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
@@ -83,10 +83,10 @@ export default async function HomePage() {
         <div className="text-center mt-10">
           <Link
             href="/products"
-            className="inline-flex items-center gap-2 px-14 py-3.5 border border-neutral-200 rounded-full text-sm font-semibold text-black hover:bg-black hover:text-white transition-all duration-200 hover:shadow-md"
+            className="group inline-flex items-center gap-2.5 px-14 py-3.5 border border-neutral-300 rounded-full text-sm font-semibold text-black hover:bg-black hover:text-white hover:border-black transition-all duration-300 hover:shadow-lg hover:scale-105"
           >
             <span>View All</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
         </div>
       </section>
@@ -101,18 +101,18 @@ export default async function HomePage() {
             <h2 className="font-integral text-3xl sm:text-5xl text-black">
               BROWSE BY DRESS STYLE
             </h2>
-            <div className="w-16 h-1 bg-black rounded-full mt-3" />
+            <div className="w-20 h-1 bg-gradient-to-r from-transparent via-black to-transparent rounded-full mt-3" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
             {/* Casual */}
             <Link
               href="/products?category=casual"
-              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl"
+              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent z-1 pointer-events-none" />
               <div className="z-10 relative">
-                <h3 className="text-2xl font-bold text-black">Casual</h3>
+                <h3 className="text-2xl font-bold text-black group-hover:translate-x-1 transition-transform duration-300">Casual</h3>
                 <span className="text-xs text-neutral-500 font-medium">120+ Products</span>
               </div>
               <Image
@@ -120,18 +120,21 @@ export default async function HomePage() {
                 alt="Casual Style"
                 fill
                 sizes="(max-width: 768px) 100vw, 400px"
-                className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                className="object-cover object-top group-hover:scale-110 transition-transform duration-700 ease-out"
               />
+              <div className="absolute bottom-5 right-5 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-black group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-300 opacity-70 group-hover:opacity-100">
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </div>
             </Link>
 
             {/* Formal */}
             <Link
               href="/products?category=formal"
-              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl"
+              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent z-1 pointer-events-none" />
               <div className="z-10 relative">
-                <h3 className="text-2xl font-bold text-black">Formal</h3>
+                <h3 className="text-2xl font-bold text-black group-hover:translate-x-1 transition-transform duration-300">Formal</h3>
                 <span className="text-xs text-neutral-500 font-medium">85+ Products</span>
               </div>
               <Image
@@ -139,18 +142,21 @@ export default async function HomePage() {
                 alt="Formal Style"
                 fill
                 sizes="(max-width: 768px) 100vw, 800px"
-                className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                className="object-cover object-center group-hover:scale-110 transition-transform duration-700 ease-out"
               />
+              <div className="absolute bottom-5 right-5 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-black group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-300 opacity-70 group-hover:opacity-100">
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </div>
             </Link>
 
             {/* Party */}
             <Link
               href="/products?category=party"
-              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl"
+              className="md:col-span-8 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent z-1 pointer-events-none" />
               <div className="z-10 relative">
-                <h3 className="text-2xl font-bold text-black">Party</h3>
+                <h3 className="text-2xl font-bold text-black group-hover:translate-x-1 transition-transform duration-300">Party</h3>
                 <span className="text-xs text-neutral-500 font-medium">95+ Products</span>
               </div>
               <Image
@@ -158,18 +164,21 @@ export default async function HomePage() {
                 alt="Party Style"
                 fill
                 sizes="(max-width: 768px) 100vw, 800px"
-                className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                className="object-cover object-top group-hover:scale-110 transition-transform duration-700 ease-out"
               />
+              <div className="absolute bottom-5 right-5 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-black group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-300 opacity-70 group-hover:opacity-100">
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </div>
             </Link>
 
             {/* Gym */}
             <Link
               href="/products?category=gym"
-              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl"
+              className="md:col-span-4 category-card-bg relative h-64 overflow-hidden p-6 group rounded-3xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent z-1 pointer-events-none" />
               <div className="z-10 relative">
-                <h3 className="text-2xl font-bold text-black">Gym</h3>
+                <h3 className="text-2xl font-bold text-black group-hover:translate-x-1 transition-transform duration-300">Gym</h3>
                 <span className="text-xs text-neutral-500 font-medium">60+ Products</span>
               </div>
               <Image
@@ -177,8 +186,11 @@ export default async function HomePage() {
                 alt="Gym Style"
                 fill
                 sizes="(max-width: 768px) 100vw, 400px"
-                className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                className="object-cover object-center group-hover:scale-110 transition-transform duration-700 ease-out"
               />
+              <div className="absolute bottom-5 right-5 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-black group-hover:bg-black group-hover:text-white group-hover:scale-110 transition-all duration-300 opacity-70 group-hover:opacity-100">
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </div>
             </Link>
           </div>
         </div>

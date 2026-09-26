@@ -166,13 +166,13 @@ export function Navbar() {
                 )}
               </div>
 
-              <Link href="/products?category=casual" className="hover:text-neutral-600 transition-colors">
+              <Link href="/products?category=casual" className="relative py-1 text-neutral-800 hover:text-black transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[2px] after:bg-black after:transition-all after:duration-200">
                 On Sale
               </Link>
-              <Link href="/products" className="hover:text-neutral-600 transition-colors">
+              <Link href="/products" className="relative py-1 text-neutral-800 hover:text-black transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[2px] after:bg-black after:transition-all after:duration-200">
                 New Arrivals
               </Link>
-              <Link href="/products?category=formal" className="hover:text-neutral-600 transition-colors">
+              <Link href="/products?category=formal" className="relative py-1 text-neutral-800 hover:text-black transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[2px] after:bg-black after:transition-all after:duration-200">
                 Brands
               </Link>
             </nav>
@@ -199,7 +199,7 @@ export function Navbar() {
                   className={`flex items-center bg-[#f0f0f0] rounded-full transition-all duration-300 ease-in-out cursor-pointer ${
                     searchExpanded
                       ? "w-60 sm:w-80 md:w-96 lg:w-[420px] px-3.5 py-2 ring-1 ring-black/20 shadow-sm"
-                      : "w-10 h-10 justify-center hover:bg-neutral-200"
+                      : "w-10 h-10 justify-center hover:bg-neutral-200 hover:scale-105"
                   }`}
                 >
                   <button
@@ -251,17 +251,17 @@ export function Navbar() {
               </div>
 
               {/* Cart Icon */}
-              <Link href="/cart" className="relative p-2 hover:opacity-75 transition-opacity" aria-label="Shopping Cart">
+              <Link href="/cart" className="relative p-2 hover:opacity-90 hover:scale-110 active:scale-95 transition-all duration-200" aria-label="Shopping Cart">
                 <ShoppingCart className="w-5 h-5" />
                 {totalCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
+                  <span className="absolute top-0.5 right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white shadow-xs animate-in zoom-in-75">
                     {totalCount}
                   </span>
                 )}
               </Link>
 
               {/* Account Icon */}
-              <Link href="/account" className="p-2 hover:opacity-75 transition-opacity" aria-label="Account">
+              <Link href="/account" className="p-2 hover:opacity-90 hover:scale-110 active:scale-95 transition-all duration-200" aria-label="Account">
                 <User className="w-5 h-5" />
               </Link>
             </div>

@@ -33,14 +33,14 @@ export function ValuePillars() {
             return (
               <div
                 key={pillar.title}
-                className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-neutral-200/70 shadow-xs hover:shadow-md transition-shadow"
+                className="group flex items-start gap-4 p-5 rounded-2xl bg-white border border-neutral-200/80 shadow-xs hover:shadow-xl hover:border-black/30 hover:-translate-y-1.5 transition-all duration-300 cursor-default"
               >
-                <div className="p-2.5 rounded-xl bg-black text-white shrink-0">
-                  <Icon className="w-5 h-5" />
+                <div className="p-3 rounded-xl bg-black text-white shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm group-hover:shadow-md">
+                  <Icon className="w-5 h-5 transition-transform duration-200" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-black">{pillar.title}</h4>
-                  <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">{pillar.desc}</p>
+                  <h4 className="font-bold text-sm text-black group-hover:text-black transition-colors">{pillar.title}</h4>
+                  <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{pillar.desc}</p>
                 </div>
               </div>
             );

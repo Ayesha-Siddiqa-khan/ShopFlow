@@ -47,7 +47,7 @@ export function ProductGallery({ mainImageUrl, productName }: ProductGalleryProp
       </div>
 
       {/* Main Big Image */}
-      <div className="relative aspect-square w-full rounded-3xl overflow-hidden product-img-bg flex items-center justify-center p-6 border border-neutral-100 shadow-xs">
+      <div className="relative aspect-square w-full rounded-3xl overflow-hidden product-img-bg flex items-center justify-center p-6 border border-neutral-100 shadow-xs group">
         {images[selectedIndex] ? (
           <Image
             src={images[selectedIndex]}
@@ -55,7 +55,7 @@ export function ProductGallery({ mainImageUrl, productName }: ProductGalleryProp
             fill
             priority
             sizes="(max-width: 1024px) 100vw, 600px"
-            className="object-cover object-center transition-all duration-300"
+            className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108 cursor-zoom-in"
           />
         ) : (
           <div className="text-neutral-400 text-sm">No Image Available</div>

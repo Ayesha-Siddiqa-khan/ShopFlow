@@ -89,14 +89,14 @@ export function CustomerReviews() {
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrev}
-            className="p-2.5 border border-neutral-200 rounded-full hover:bg-neutral-100 transition-colors focus:outline-none"
+            className="p-2.5 border border-neutral-200 rounded-full hover:bg-black hover:text-white hover:border-black hover:scale-110 active:scale-90 transition-all duration-200 focus:outline-none cursor-pointer"
             aria-label="Previous review"
           >
             <ArrowRight className="w-4 h-4 rotate-180" />
           </button>
           <button
             onClick={handleNext}
-            className="p-2.5 border border-neutral-200 rounded-full hover:bg-neutral-100 transition-colors focus:outline-none"
+            className="p-2.5 border border-neutral-200 rounded-full hover:bg-black hover:text-white hover:border-black hover:scale-110 active:scale-90 transition-all duration-200 focus:outline-none cursor-pointer"
             aria-label="Next review"
           >
             <ArrowRight className="w-4 h-4" />
@@ -105,12 +105,12 @@ export function CustomerReviews() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {visibleReviews.map((review, idx) => (
+        {visibleReviews.map((review) => (
           <div
-            key={`${review.id}-${idx}`}
-            className="border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-3 bg-white shadow-xs hover:border-black/30 transition-all duration-300"
+            key={`${review.id}-${startIndex}`}
+            className="group border border-neutral-200 rounded-3xl p-6 sm:p-8 space-y-3 bg-white shadow-xs hover:border-black/40 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 animate-in fade-in duration-300"
           >
-            <div className="flex text-amber-400 gap-1">
+            <div className="flex text-amber-400 gap-1 transition-transform group-hover:scale-105 origin-left duration-200">
               {[...Array(review.rating)].map((_, i) => (
                 <Star key={i} className="w-4 h-4 fill-current" />
               ))}
@@ -118,7 +118,7 @@ export function CustomerReviews() {
 
             <div className="flex items-center gap-1.5 font-bold text-black text-base">
               <span>{review.name}</span>
-              <span className="w-4 h-4 bg-emerald-500 rounded-full text-white flex items-center justify-center text-[10px]">
+              <span className="w-4 h-4 bg-emerald-500 rounded-full text-white flex items-center justify-center text-[10px] shadow-xs group-hover:scale-125 transition-transform duration-200">
                 ✓
               </span>
             </div>

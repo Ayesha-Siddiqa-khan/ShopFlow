@@ -86,15 +86,16 @@ export function HeroInteractive() {
             <div className="flex flex-wrap items-center gap-4 pt-1">
               <Link
                 href="/products"
-                className="inline-flex items-center gap-3 px-10 py-4 rounded-full bg-black text-white text-sm font-semibold hover:bg-neutral-800 transition-all hover:scale-[1.02] shadow-lg shadow-black/10 group"
+                className="relative overflow-hidden inline-flex items-center gap-3 px-10 py-4 rounded-full bg-black text-white text-sm font-semibold hover:bg-neutral-800 transition-all hover:scale-[1.03] shadow-lg shadow-black/15 group"
               >
+                <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
                 <span>Shop Collection</span>
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
 
               <Link
                 href="/products?category=casual"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white border border-neutral-200 text-black text-sm font-semibold hover:bg-neutral-50 transition-colors shadow-xs"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white border border-neutral-200 text-black text-sm font-semibold hover:bg-neutral-50 hover:border-black/30 transition-all hover:scale-[1.02] shadow-xs"
               >
                 <span>Explore Looks</span>
               </Link>
@@ -111,10 +112,10 @@ export function HeroInteractive() {
                     key={look.id}
                     type="button"
                     onClick={() => setSelectedLook(look)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
                       selectedLook.id === look.id
-                        ? "bg-black text-white shadow-sm"
-                        : "bg-white border border-neutral-200 text-neutral-600 hover:text-black hover:border-black/50"
+                        ? "bg-black text-white shadow-sm scale-105"
+                        : "bg-white border border-neutral-200 text-neutral-600 hover:text-black hover:border-black/50 hover:scale-102"
                     }`}
                   >
                     {look.label}
@@ -125,15 +126,15 @@ export function HeroInteractive() {
 
             {/* Stats Row */}
             <div className="grid grid-cols-3 gap-6 pt-6 border-t border-neutral-200/80 max-w-lg">
-              <div>
+              <div className="transition-transform duration-200 hover:scale-105 cursor-default">
                 <h3 className="text-2xl sm:text-4xl font-extrabold text-black font-integral">200+</h3>
                 <p className="text-xs text-neutral-500 mt-0.5">International Brands</p>
               </div>
-              <div className="border-l border-neutral-200 pl-6">
+              <div className="border-l border-neutral-200 pl-6 transition-transform duration-200 hover:scale-105 cursor-default">
                 <h3 className="text-2xl sm:text-4xl font-extrabold text-black font-integral">2,000+</h3>
                 <p className="text-xs text-neutral-500 mt-0.5">High-Quality Items</p>
               </div>
-              <div className="border-l border-neutral-200 pl-6">
+              <div className="border-l border-neutral-200 pl-6 transition-transform duration-200 hover:scale-105 cursor-default">
                 <h3 className="text-2xl sm:text-4xl font-extrabold text-black font-integral">30,000+</h3>
                 <p className="text-xs text-neutral-500 mt-0.5">Happy Customers</p>
               </div>
@@ -152,33 +153,36 @@ export function HeroInteractive() {
                 fill
                 priority
                 sizes="(max-width: 768px) 100vw, 550px"
-                className="object-cover object-top transition-all duration-700 group-hover:scale-105"
+                className="object-cover object-top transition-all duration-700 group-hover:scale-108"
               />
 
               {/* Subtle Luxury Gradient Overlay at the base */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
 
-              {/* Interactive Outfit Tag Hotspot */}
+              {/* Interactive Outfit Tag Hotspot with Double Ripple */}
               <div className="absolute top-1/2 right-12 z-20">
                 <button
                   type="button"
                   onClick={() => setShowHotspot(!showHotspot)}
-                  className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-md shadow-lg flex items-center justify-center text-black border border-white hover:scale-110 transition-transform cursor-pointer"
+                  className="relative w-9 h-9 rounded-full bg-white/90 backdrop-blur-md shadow-xl flex items-center justify-center text-black border border-white hover:scale-110 transition-transform cursor-pointer"
                   title="View outfit details"
                   aria-label="View outfit details"
                 >
-                  <span className="w-2.5 h-2.5 rounded-full bg-black animate-ping" />
+                  <span className="absolute inset-0 rounded-full bg-black/40 animate-ripple pointer-events-none" />
+                  <span className="relative w-3 h-3 rounded-full bg-black shadow-sm flex items-center justify-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  </span>
                 </button>
 
                 {/* Hotspot Card popover */}
                 {showHotspot && (
-                  <div className="absolute right-0 bottom-10 w-52 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl border border-neutral-200 text-left animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 bottom-12 w-52 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl border border-neutral-200 text-left animate-in fade-in zoom-in-95 duration-150">
                     <p className="text-[10px] uppercase font-bold text-neutral-400">Featured Outfit</p>
                     <p className="font-bold text-black text-xs mt-0.5 line-clamp-1">{selectedLook.outfitTitle}</p>
                     <p className="font-extrabold text-black text-sm mt-1">{selectedLook.outfitPrice}</p>
                     <Link
                       href={`/products/${selectedLook.productSlug}`}
-                      className="mt-2 block w-full py-1.5 text-center bg-black text-white text-[11px] font-semibold rounded-full hover:bg-neutral-800"
+                      className="mt-2 block w-full py-1.5 text-center bg-black text-white text-[11px] font-semibold rounded-full hover:bg-neutral-800 transition-colors"
                     >
                       View Piece
                     </Link>
@@ -188,7 +192,7 @@ export function HeroInteractive() {
 
               {/* Bottom Card Inside Image */}
               <div className="absolute bottom-5 left-5 right-5 z-20">
-                <div className="bg-white/90 backdrop-blur-md p-3.5 rounded-2xl border border-white/60 shadow-lg flex items-center justify-between">
+                <div className="bg-white/90 backdrop-blur-md p-3.5 rounded-2xl border border-white/60 shadow-lg flex items-center justify-between transition-transform duration-300 group-hover:translate-y-[-2px]">
                   <div>
                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">
                       {selectedLook.tag}
@@ -199,7 +203,7 @@ export function HeroInteractive() {
                   </div>
                   <Link
                     href={`/products/${selectedLook.productSlug}`}
-                    className="p-2 rounded-full bg-black text-white hover:bg-neutral-800 transition-colors shadow-sm"
+                    className="p-2 rounded-full bg-black text-white hover:bg-neutral-800 hover:scale-110 transition-all shadow-sm"
                     aria-label="View product"
                   >
                     <ShoppingBag className="w-4 h-4" />
@@ -209,14 +213,14 @@ export function HeroInteractive() {
             </div>
 
             {/* Floating Top Left Luxury Badge */}
-            <div className="absolute -top-3 -left-4 sm:-left-6 z-30 bg-white/90 backdrop-blur-md border border-neutral-200/80 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-bounce duration-1000">
-              <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
+            <div className="absolute -top-3 -left-4 sm:-left-6 z-30 bg-white/90 backdrop-blur-md border border-neutral-200/80 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-float">
+              <Flame className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
               <span className="text-xs font-bold text-black">{selectedLook.badge}</span>
             </div>
 
             {/* Floating Bottom Right Rating Card */}
-            <div className="absolute -bottom-4 -right-4 sm:-right-6 z-30 bg-white/95 backdrop-blur-md border border-neutral-200/80 p-3 rounded-2xl shadow-xl flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+            <div className="absolute -bottom-4 -right-4 sm:-right-6 z-30 bg-white/95 backdrop-blur-md border border-neutral-200/80 p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-float-reverse">
+              <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shadow-xs animate-pulse">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="text-left">
@@ -230,7 +234,8 @@ export function HeroInteractive() {
             </div>
 
             {/* Subtle Luxury Sparkles */}
-            <Sparkles className="absolute top-2 right-4 w-10 h-10 text-black/70 animate-pulse pointer-events-none" />
+            <Sparkles className="absolute -top-2 right-2 w-9 h-9 text-black/80 animate-spin-slow pointer-events-none" />
+            <Sparkles className="absolute bottom-16 -left-6 w-6 h-6 text-amber-500/70 animate-pulse pointer-events-none hidden sm:block" />
           </div>
 
         </div>
